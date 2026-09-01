@@ -134,7 +134,7 @@ class MontseguroKpisView(APIView):
 
 # ---------------------------------------------------------------
 # PROP5 — pipeline consultivo de alto valor: valor de imóvel != receita,
-# pipeline != venda fechada, ciclo longo 
+# pipeline != venda fechada, ciclo longo
 # ---------------------------------------------------------------
 class Prop5KpisView(APIView):
     def get(self, request):
@@ -231,6 +231,105 @@ def _mes_anterior(mes_str):
     if mes == 1:
         return f"{ano - 1}-12"
     return f"{ano}-{mes - 1:02d}"
+
+# ---------------------------------------------------------------
+# TECHBRABO 
+# ---------------------------------------------------------------
+class TechbraboKpisView(APIView):
+    def get(self, request):
+        mes = request.query_params.get("mes") or mes_mais_recente(TechbraboLead.objects.all())
+        if mes is None:
+            return Response({"detail": "Sem dados carregados."}, status=404)
+
+        inicio_mes, fim_mes = limites_do_mes(mes)
+
+        # --- MRR e crescimento MoM ---
+        mrr_atual = _mrr_ate(fim_mes)
+        _, fim_mes_anterior = limites_do_mes(_mes_anterior(mes))
+        mrr_anterior = _mrr_ate(fim_mes_anterior)
+        crescimento_mrr_mom = (
+            round(float(mrr_atual - mrr_anterior) / float(mrr_anterior) * 100, 1)
+            if mrr_anterior else None
+        )
+
+        # --- Contratos assinados no mês (comercial) ---
+        contratos_no_mes = TechbraboOportunidade.objects.filter(
+            estagio="Contrato assinado", data_contrato__gte=inicio_mes, data_contrato__lte=fim_mes
+        )
+        n_contratos = contratos_no_mes.count()
+
+        receita_pontual_mes = contratos_no_mes.filter(
+            tipo_receita="Pontual"
+        ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+
+        receita_total_mes = mrr_atual + receita_pontual_mes
+
+        ticket_medio = None
+        if n_contratos:
+            soma = contratos_no_mes.aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+            ticket_medio = round(soma / n_contratos, 2)
+
+        # --- Pipeline/forecast (mesma limitação de "estado atual" do Prop5) ---
+        propostas_abertas = TechbraboOportunidade.objects.filter(
+            estagio="Proposta enviada", lead__data_criacao__lte=fim_mes
+        )
+        pipeline_forecast = propostas_abertas.aggregate(total=Sum("valor_proposta"))["total"] or Decimal("0")
+
+        # --- Operação: margem e prazo ---
+        projetos_concluidos = TechbraboProjeto.objects.filter(
+            status="Concluído", data_entrega_real__lte=fim_mes
+        )
+        n_concluidos = projetos_concluidos.count()
+        margem_media_pct = None
+        if n_concluidos:
+            soma_margem = projetos_concluidos.aggregate(total=Sum("margem_percentual"))["total"]
+            margem_media_pct = round(soma_margem / n_concluidos, 1)
+
+        # % no prazo = concluídos (por definição, no mock, "Concluído" só
+        # acontece quando NÃO houve atraso) / (concluídos + atrasados em curso).
+        projetos_atrasados = TechbraboProjeto.objects.filter(status="Atrasado").count()
+        total_avaliavel = n_concluidos + projetos_atrasados
+        pct_no_prazo = round(n_concluidos / total_avaliavel * 100, 1) if total_avaliavel else None
+
+        # --- Expansão vs. cliente novo ---
+        valor_total_contratado_mes = contratos_no_mes.aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+        valor_clientes_existentes = contratos_no_mes.filter(
+            cliente_existente=True
+        ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+        pct_expansao = (
+            round(float(valor_clientes_existentes) / float(valor_total_contratado_mes) * 100, 1)
+            if valor_total_contratado_mes else None
+        )
+
+        # --- CAC ---
+        investimento_mkt = Marketing.objects.filter(
+            empresa=Empresa.TECHBRABO, mes=mes
+        ).aggregate(total=Sum("investimento"))["total"] or Decimal("0")
+        cac = round(investimento_mkt / n_contratos, 2) if n_contratos else None
+
+        # --- Atingimento de meta ---
+        meta = MetaEmpresa.objects.filter(empresa=Empresa.TECHBRABO, mes=mes).first()
+        atingimento_meta = (
+            round(float(receita_total_mes) / float(meta.meta_receita) * 100, 1)
+            if meta and meta.meta_receita else None
+        )
+
+        return Response({
+            "mes": mes,
+            "mrr_atual": mrr_atual,
+            "crescimento_mrr_mom_pct": crescimento_mrr_mom,
+            "receita_pontual_mes": receita_pontual_mes,
+            "receita_total_mes": receita_total_mes,
+            "novos_contratos_no_mes": n_contratos,
+            "ticket_medio_contrato": ticket_medio,
+            "pipeline_forecast": pipeline_forecast,
+            "margem_media_pct": margem_media_pct,
+            "pct_projetos_no_prazo": pct_no_prazo,
+            "pct_expansao_clientes_existentes": pct_expansao,
+            "cac": cac,
+            "meta_receita": meta.meta_receita if meta else None,
+            "atingimento_meta_pct": atingimento_meta,
+        })
 
 
 class CEOOverviewAPIView(APIView):
