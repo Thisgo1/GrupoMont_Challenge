@@ -420,6 +420,167 @@ class MetaEmpresaListView(generics.ListAPIView):
         if empresa:
             qs = qs.filter(empresa=empresa)
         return qs
+
+# ---------------------------------------------------------------
+# COMPARATIVOS ENTRE EMPRESAS (item 11 do briefing)
+# ---------------------------------------------------------------
+class ComparativosView(APIView):
+    def get(self, request):
+        mes = request.query_params.get("mes") or mes_mais_recente(MontseguroLead.objects.all())
+        if mes is None:
+            return Response({"detail": "Sem dados carregados."}, status=404)
+
+        inicio_mes, fim_mes = limites_do_mes(mes)
+
+        # Helper para contar vendedores únicos por empresa (usando os dados do mês)
+        # Montseguro: vendedores no funil do mês
+        vendedores_mont = MontseguroFunil.objects.filter(
+            lead__mes_referencia=mes
+        ).values_list("vendedor", flat=True).distinct().count()
+
+        # Prop5: vendedores em oportunidades do mês
+        vendedores_prop5 = Prop5Oportunidade.objects.filter(
+            lead__mes_referencia=mes
+        ).values_list("vendedor", flat=True).distinct().count()
+
+        # TechBrabo: vendedores em oportunidades do mês
+        vendedores_tech = TechbraboOportunidade.objects.filter(
+            lead__mes_referencia=mes
+        ).values_list("vendedor", flat=True).distinct().count()
+
+        # ---- 1. Montseguro ----
+        # Leads qualificados = leads criados no mês (simplificação)
+        leads_qtd_mont = MontseguroLead.objects.filter(mes_referencia=mes).count()
+
+        # Fechamentos no mês = contratados
+        fechamentos_mont = MontseguroFunil.objects.filter(
+            data_contratacao__gte=inicio_mes,
+            data_contratacao__lte=fim_mes
+        ).count()
+
+        # Receita = comissão sobre clientes ativos no fim do mês
+        ativos_mont = MontseguroClienteAtivo.objects.filter(
+            data_ativacao__lte=fim_mes
+        ).exclude(cancelado=True, data_cancelamento__lte=fim_mes)
+        premio_total_mont = ativos_mont.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+        receita_mont = round(premio_total_mont * COMISSAO_MONTSEGURO, 2)
+
+        # Ticket médio (prêmio mensal médio de clientes ativos)
+        ticket_medio_mont = ativos_mont.aggregate(avg=Avg("premio_mensal"))["avg"] or Decimal("1")
+
+        # Investimento marketing
+        invest_mont = Marketing.objects.filter(
+            empresa=Empresa.MONTSEGURO, mes=mes
+        ).aggregate(total=Sum("investimento"))["total"] or Decimal("0")
+
+        # ---- 2. Prop5 ----
+        leads_qtd_prop5 = Prop5Lead.objects.filter(mes_referencia=mes).count()
+
+        fechamentos_prop5 = Prop5Oportunidade.objects.filter(
+            estagio="Fechado",
+            data_fechamento__gte=inicio_mes,
+            data_fechamento__lte=fim_mes
+        ).count()
+
+        receita_prop5 = Prop5Oportunidade.objects.filter(
+            estagio="Fechado",
+            data_fechamento__gte=inicio_mes,
+            data_fechamento__lte=fim_mes
+        ).aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+
+        ticket_medio_prop5 = Prop5Oportunidade.objects.filter(
+            estagio="Fechado"
+        ).aggregate(avg=Avg("valor_fechado"))["avg"] or Decimal("1")
+
+        invest_prop5 = Marketing.objects.filter(
+            empresa=Empresa.PROP5, mes=mes
+        ).aggregate(total=Sum("investimento"))["total"] or Decimal("0")
+
+        # ---- 3. TechBrabo ----
+        leads_qtd_tech = TechbraboLead.objects.filter(mes_referencia=mes).count()
+
+        fechamentos_tech = TechbraboOportunidade.objects.filter(
+            estagio="Contrato assinado",
+            data_contrato__gte=inicio_mes,
+            data_contrato__lte=fim_mes
+        ).count()
+
+        mrr_atual = _mrr_ate(fim_mes)
+        receita_pontual_tech = TechbraboOportunidade.objects.filter(
+            estagio="Contrato assinado",
+            tipo_receita="Pontual",
+            data_contrato__gte=inicio_mes,
+            data_contrato__lte=fim_mes
+        ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+        receita_tech = mrr_atual + receita_pontual_tech
+
+        ticket_medio_tech = TechbraboOportunidade.objects.filter(
+            estagio="Contrato assinado"
+        ).aggregate(avg=Avg("valor_contrato"))["avg"] or Decimal("1")
+
+        invest_tech = Marketing.objects.filter(
+            empresa=Empresa.TECHBRABO, mes=mes
+        ).aggregate(total=Sum("investimento"))["total"] or Decimal("0")
+
+        # ---- Montar resultado com os 3 indicadores comparativos ----
+        resultado = []
+
+        # Montseguro
+        produtividade_ajustada_mont = (receita_mont / vendedores_mont) / ticket_medio_mont if vendedores_mont and ticket_medio_mont else 0
+        cplq_mont = invest_mont / leads_qtd_mont if leads_qtd_mont else 0
+        conversao_ajustada_mont = (fechamentos_mont / leads_qtd_mont * 100) if leads_qtd_mont else 0
+
+        resultado.append({
+            "empresa": "Montseguro",
+            "produtividade_ajustada": round(produtividade_ajustada_mont, 2),
+            "cplq": round(cplq_mont, 2),
+            "conversao_ajustada_pct": round(conversao_ajustada_mont, 1),
+            "leads_qualificados": leads_qtd_mont,
+            "fechamentos": fechamentos_mont,
+            "receita": receita_mont,
+            "num_vendedores": vendedores_mont,
+            "ticket_medio": ticket_medio_mont,
+        })
+
+        # Prop5
+        produtividade_ajustada_prop5 = (receita_prop5 / vendedores_prop5) / ticket_medio_prop5 if vendedores_prop5 and ticket_medio_prop5 else 0
+        cplq_prop5 = invest_prop5 / leads_qtd_prop5 if leads_qtd_prop5 else 0
+        conversao_ajustada_prop5 = (fechamentos_prop5 / leads_qtd_prop5 * 100) if leads_qtd_prop5 else 0
+
+        resultado.append({
+            "empresa": "Prop5",
+            "produtividade_ajustada": round(produtividade_ajustada_prop5, 2),
+            "cplq": round(cplq_prop5, 2),
+            "conversao_ajustada_pct": round(conversao_ajustada_prop5, 1),
+            "leads_qualificados": leads_qtd_prop5,
+            "fechamentos": fechamentos_prop5,
+            "receita": receita_prop5,
+            "num_vendedores": vendedores_prop5,
+            "ticket_medio": ticket_medio_prop5,
+        })
+
+        # TechBrabo
+        produtividade_ajustada_tech = (receita_tech / vendedores_tech) / ticket_medio_tech if vendedores_tech and ticket_medio_tech else 0
+        cplq_tech = invest_tech / leads_qtd_tech if leads_qtd_tech else 0
+        conversao_ajustada_tech = (fechamentos_tech / leads_qtd_tech * 100) if leads_qtd_tech else 0
+
+        resultado.append({
+            "empresa": "TechBrabo",
+            "produtividade_ajustada": round(produtividade_ajustada_tech, 2),
+            "cplq": round(cplq_tech, 2),
+            "conversao_ajustada_pct": round(conversao_ajustada_tech, 1),
+            "leads_qualificados": leads_qtd_tech,
+            "fechamentos": fechamentos_tech,
+            "receita": receita_tech,
+            "num_vendedores": vendedores_tech,
+            "ticket_medio": ticket_medio_tech,
+        })
+
+        return Response({
+            "mes": mes,
+            "comparativos": resultado,
+        })
+
 class CEOOverviewAPIView(APIView):
     def get(self, request):
         ano = request.query_params.get('ano', datetime.now().year)
