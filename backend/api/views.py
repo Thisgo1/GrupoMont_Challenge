@@ -1,16 +1,136 @@
-from django.shortcuts import render
-from rest_framework import viewsets
-from .models import Empresa, Vendedor, Canal, Campanha, Oportunidade, Meta, MarketingInvestimento
-from .serializers import (
-    EmpresaSerializer, VendedorSerializer, CanalSerializer,
-    CampanhaSerializer, OportunidadeSerializer, MetaSerializer,
-    MarketingInvestimentoSerializer
-)
+import calendar
+from datetime import date, datetime
+from decimal import Decimal
+from django.db.models import Avg
+from django.db.models import Sum
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Sum, Count, Avg, Q, F, ExpressionWrapper, FloatField
-from datetime import datetime
-from .models import Oportunidade, Empresa, Meta, MarketingInvestimento
+from rest_framework import generics
+
+
+from .models import (
+    MontseguroLead, MontseguroFunil, MontseguroClienteAtivo,
+    Prop5Lead, Prop5Oportunidade,
+    TechbraboLead, TechbraboOportunidade, TechbraboProjeto,
+    Marketing, MetaEmpresa, Empresa,
+)
+from .serializers import (
+    MontseguroFunilSerializer, MontseguroClienteAtivoSerializer,
+    Prop5OportunidadeSerializer,
+    TechbraboOportunidadeSerializer, TechbraboProjetoSerializer,
+    MarketingSerializer, MetaEmpresaSerializer,
+)
+
+COMISSAO_MONTSEGURO = Decimal("0.15")
+
+
+def limites_do_mes(mes_str):
+    """'2026-08' -> (date(2026,8,1), date(2026,8,31))"""
+    ano, mes = map(int, mes_str.split("-"))
+    ultimo_dia = calendar.monthrange(ano, mes)[1]
+    return date(ano, mes, 1), date(ano, mes, ultimo_dia)
+
+
+def mes_mais_recente(queryset, campo="mes_referencia"):
+    """Pega o mês mais recente presente nos dados, caso o front não passe ?mes=."""
+    valor = queryset.order_by(f"-{campo}").values_list(campo, flat=True).first()
+    return valor
+
+
+# ---------------------------------------------------------------
+# MONTSEGURO — endpoint de KPIs COMPLETO (padrão de referência).
+# Cada bloco abaixo corresponde a um KPI documentado em kpis-grupo-mont.md.
+# ---------------------------------------------------------------
+class MontseguroKpisView(APIView):
+    def get(self, request):
+        mes = request.query_params.get("mes") or mes_mais_recente(MontseguroLead.objects.all())
+        if mes is None:
+            return Response({"detail": "Sem dados carregados."}, status=404)
+
+        inicio_mes, fim_mes = limites_do_mes(mes)
+
+        leads_no_mes = MontseguroLead.objects.filter(mes_referencia=mes).count()
+
+        funil_mes = MontseguroFunil.objects.filter(
+            data_contratacao__gte=inicio_mes, data_contratacao__lte=fim_mes
+        )
+        contratacoes_no_mes = funil_mes.count()
+
+        implantacoes_no_mes = MontseguroFunil.objects.filter(
+            data_implantacao__gte=inicio_mes, data_implantacao__lte=fim_mes
+        ).count()
+
+        # --- Taxa de conversão lead -> contratação ---
+        # Aproximação de mês corrido: contratações fechadas no mês / leads
+        # criados no mesmo mês. Não é uma leitura por coorte (uma contratação
+        # de agosto pode ter vindo de um lead de julho), mas é a leitura
+        # padrão de "ritmo do mês" usada em dashboards executivos.
+        taxa_conversao_lead_contratacao = (
+            round(contratacoes_no_mes / leads_no_mes * 100, 1) if leads_no_mes else None
+        )
+
+        # --- Taxa de implantação ---
+        taxa_implantacao = (
+            round(implantacoes_no_mes / contratacoes_no_mes * 100, 1) if contratacoes_no_mes else None
+        )
+
+        # --- Vidas ativas e receita de comissão (base ativa no fim do mês) ---
+        clientes_ativos_no_mes = MontseguroClienteAtivo.objects.filter(
+            data_ativacao__lte=fim_mes
+        ).exclude(cancelado=True, data_cancelamento__lte=fim_mes)
+
+        vidas_ativas = clientes_ativos_no_mes.aggregate(total=Sum("vidas_ativas"))["total"] or 0
+        premio_total = clientes_ativos_no_mes.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+        receita_comissao_mes = round(premio_total * COMISSAO_MONTSEGURO, 2)
+
+        # --- Ticket médio (prêmio mensal médio dos contratos implantados no mês) ---
+        implantados_no_mes = MontseguroFunil.objects.filter(
+            data_implantacao__gte=inicio_mes, data_implantacao__lte=fim_mes
+        )
+        ticket_medio = None
+        if implantados_no_mes.exists():
+            soma = implantados_no_mes.aggregate(total=Sum("premio_mensal_estimado"))["total"]
+            ticket_medio = round(soma / implantados_no_mes.count(), 2)
+
+        # --- CAC ---
+        investimento_mkt = Marketing.objects.filter(
+            empresa=Empresa.MONTSEGURO, mes=mes
+        ).aggregate(total=Sum("investimento"))["total"] or Decimal("0")
+        cac = round(investimento_mkt / implantacoes_no_mes, 2) if implantacoes_no_mes else None
+
+        # --- Churn (cancelamentos no mês / ativos no início do mês) ---
+        ativos_inicio_mes = MontseguroClienteAtivo.objects.filter(
+            data_ativacao__lt=inicio_mes
+        ).exclude(cancelado=True, data_cancelamento__lt=inicio_mes).count()
+        cancelamentos_no_mes = MontseguroClienteAtivo.objects.filter(
+            cancelado=True, data_cancelamento__gte=inicio_mes, data_cancelamento__lte=fim_mes
+        ).count()
+        taxa_churn = (
+            round(cancelamentos_no_mes / ativos_inicio_mes * 100, 1) if ativos_inicio_mes else None
+        )
+
+        # --- Atingimento de meta ---
+        meta = MetaEmpresa.objects.filter(empresa=Empresa.MONTSEGURO, mes=mes).first()
+        atingimento_meta = (
+            round(float(receita_comissao_mes) / float(meta.meta_receita) * 100, 1)
+            if meta and meta.meta_receita else None
+        )
+
+        return Response({
+            "mes": mes,
+            "leads_no_mes": leads_no_mes,
+            "contratacoes_no_mes": contratacoes_no_mes,
+            "implantacoes_no_mes": implantacoes_no_mes,
+            "taxa_conversao_lead_contratacao_pct": taxa_conversao_lead_contratacao,
+            "taxa_implantacao_pct": taxa_implantacao,
+            "vidas_ativas": vidas_ativas,
+            "receita_comissao_mes": receita_comissao_mes,
+            "ticket_medio_premio_mensal": ticket_medio,
+            "cac": cac,
+            "taxa_churn_pct": taxa_churn,
+            "meta_receita": meta.meta_receita if meta else None,
+            "atingimento_meta_pct": atingimento_meta,
+        })
 
 
 class CEOOverviewAPIView(APIView):
@@ -51,54 +171,6 @@ class CEOOverviewAPIView(APIView):
                 'gap': forecast - meta_valor,
             })
         return Response(resultado)
-
-class MontseguroKPIAPIView(APIView):
-    def get(self, request):
-        ano = request.query_params.get('ano', datetime.now().year)
-        mes = request.query_params.get('mes', datetime.now().month)
-        empresa = Empresa.objects.get(nome='Montseguro')
-
-        ops_mes = Oportunidade.objects.filter(empresa=empresa, data_criacao__year=ano, data_criacao__month=mes)
-        leads = ops_mes.count()
-        contratacoes = Oportunidade.objects.filter(
-            empresa=empresa, status='Ganha',
-            data_previsao_fechamento__year=ano,
-            data_previsao_fechamento__month=mes,
-            estagio__in=['Contratação', 'Implantado', 'Ativo']
-        ).count()
-        implantados = Oportunidade.objects.filter(
-            empresa=empresa, status='Ganha',
-            data_previsao_fechamento__year=ano,
-            data_previsao_fechamento__month=mes,
-            estagio__in=['Implantado', 'Ativo']
-        ).count()
-
-        taxa_conversao = round(contratacoes / leads * 100, 2) if leads else 0
-        taxa_implantacao = round(implantados / contratacoes * 100, 2) if contratacoes else 0
-        ticket_medio = Oportunidade.objects.filter(
-            empresa=empresa, status='Ganha',
-            estagio__in=['Implantado', 'Ativo']
-        ).aggregate(avg=Avg('valor_potencial'))['avg'] or 0
-
-        vidas_ativas = Oportunidade.objects.filter(
-            empresa=empresa, status='Ganha',
-            estagio__in=['Implantado', 'Ativo']
-        ).aggregate(total=Sum('vidas_contratadas'))['total'] or 0
-
-        investimento = MarketingInvestimento.objects.filter(
-            ano_mes=f"{ano}-{str(mes).zfill(2)}"
-        ).aggregate(total=Sum('investimento'))['total'] or 0
-        cac = round(investimento / implantados, 2) if implantados else 0
-
-        return Response({
-            'taxa_conversao_lead_contratacao': taxa_conversao,
-            'taxa_implantacao': taxa_implantacao,
-            'ticket_medio': ticket_medio,
-            'vidas_ativas': vidas_ativas,
-            'cac': cac,
-            'contratacoes': contratacoes,
-            'implantados': implantados,
-        })
 
 class EmpresaViewSet(viewsets.ModelViewSet):
     queryset = Empresa.objects.all()

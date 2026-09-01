@@ -1,38 +1,64 @@
 from rest_framework import serializers
-from .models import Empresa, Vendedor, Canal, Campanha, Oportunidade, Meta, MarketingInvestimento
+from .models import (
+    MontseguroFunil, MontseguroClienteAtivo,
+    Prop5Oportunidade,
+    TechbraboOportunidade, TechbraboProjeto,
+    Marketing, MetaEmpresa,
+)
 
-class EmpresaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Empresa
-        fields = '__all__'
 
-class VendedorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Vendedor
-        fields = '__all__'
+class MontseguroFunilSerializer(serializers.ModelSerializer):
+    canal = serializers.CharField(source="lead.canal", read_only=True)
+    mes_referencia = serializers.CharField(source="lead.mes_referencia", read_only=True)
 
-class CanalSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Canal
-        fields = '__all__'
+        model = MontseguroFunil
+        fields = [
+            "id", "status", "vendedor", "operadora", "vidas",
+            "premio_mensal_estimado", "data_cotacao", "data_proposta",
+            "data_contratacao", "data_implantacao", "motivo_perda",
+            "canal", "mes_referencia",
+        ]
 
-class CampanhaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Campanha
-        fields = '__all__'
 
-class OportunidadeSerializer(serializers.ModelSerializer):
+class MontseguroClienteAtivoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Oportunidade
-        fields = '__all__'
-        depth = 1
+        model = MontseguroClienteAtivo
+        fields = "__all__"
 
-class MetaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Meta
-        fields = '__all__'
 
-class MarketingInvestimentoSerializer(serializers.ModelSerializer):
+class Prop5OportunidadeSerializer(serializers.ModelSerializer):
+    canal = serializers.CharField(source="lead.canal", read_only=True)
+    pais_residencia = serializers.CharField(source="lead.pais_residencia", read_only=True)
+    mes_referencia = serializers.CharField(source="lead.mes_referencia", read_only=True)
+
     class Meta:
-        model = MarketingInvestimento
-        fields = '__all__'
+        model = Prop5Oportunidade
+        fields = "__all__"
+
+
+class TechbraboOportunidadeSerializer(serializers.ModelSerializer):
+    canal = serializers.CharField(source="lead.canal", read_only=True)
+    mes_referencia = serializers.CharField(source="lead.mes_referencia", read_only=True)
+
+    class Meta:
+        model = TechbraboOportunidade
+        fields = "__all__"
+
+
+class TechbraboProjetoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TechbraboProjeto
+        fields = "__all__"
+
+
+class MarketingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Marketing
+        fields = "__all__"
+
+
+class MetaEmpresaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MetaEmpresa
+        fields = "__all__"
