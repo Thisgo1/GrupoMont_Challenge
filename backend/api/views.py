@@ -581,6 +581,77 @@ class ComparativosView(APIView):
             "comparativos": resultado,
         })
 
+# ================================================================
+# EVOLUÇÃO DA RECEITA — últimos N meses (padrão: 6)
+# ================================================================
+class EvolucaoReceitaView(APIView):
+    def get(self, request):
+        meses = int(request.query_params.get("meses", 6))
+        mes_fim = request.query_params.get("mes") or mes_mais_recente(MontseguroLead.objects.all())
+        if mes_fim is None:
+            return Response({"detail": "Sem dados carregados."}, status=404)
+
+        # Lista de meses (do mais antigo para o mais recente)
+        lista_meses = []
+        mes_atual = mes_fim
+        for _ in range(meses):
+            lista_meses.insert(0, mes_atual)
+            mes_atual = _mes_anterior(mes_atual)
+
+        resultado = []
+        empresas_config = [
+            {"nome": "Montseguro", "choice": Empresa.MONTSEGURO, "comissao": COMISSAO_MONTSEGURO},
+            {"nome": "Prop5", "choice": Empresa.PROP5},
+            {"nome": "TechBrabo", "choice": Empresa.TECHBRABO},
+        ]
+
+        for mes in lista_meses:
+            inicio_mes, fim_mes = limites_do_mes(mes)
+            entrada = {"mes": mes}
+
+            receita_total_mes = Decimal("0")
+
+            for emp in empresas_config:
+                nome = emp["nome"]
+
+                if nome == "Montseguro":
+                    ativos = MontseguroClienteAtivo.objects.filter(
+                        data_ativacao__lte=fim_mes
+                    ).exclude(cancelado=True, data_cancelamento__lte=fim_mes)
+                    premio = ativos.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+                    receita = round(premio * emp["comissao"], 2)
+
+                elif nome == "Prop5":
+                    fechamentos = Prop5Oportunidade.objects.filter(
+                        estagio="Fechado",
+                        data_fechamento__gte=inicio_mes,
+                        data_fechamento__lte=fim_mes
+                    )
+                    receita = fechamentos.aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+
+                else:  # TechBrabo
+                    mrr = _mrr_ate(fim_mes)
+                    receita_pontual = TechbraboOportunidade.objects.filter(
+                        estagio="Contrato assinado",
+                        tipo_receita="Pontual",
+                        data_contrato__gte=inicio_mes,
+                        data_contrato__lte=fim_mes
+                    ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+                    receita = mrr + receita_pontual
+
+                # Chave normalizada para o frontend (ex: "receita_montseguro")
+                entrada[f"receita_{nome.lower()}"] = receita
+                receita_total_mes += receita
+
+            entrada["receita_total"] = receita_total_mes
+            resultado.append(entrada)
+
+        return Response({
+            "meses": resultado,
+            "labels": [e["mes"] for e in resultado],
+        })
+
+
 class CEOOverviewAPIView(APIView):
     def get(self, request):
         ano = request.query_params.get('ano', datetime.now().year)
