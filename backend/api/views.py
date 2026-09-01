@@ -760,42 +760,323 @@ class MetasProjecaoView(APIView):
         })
 
 
-class CEOOverviewAPIView(APIView):
+class CEOOverviewView(APIView):
     def get(self, request):
-        ano = request.query_params.get('ano', datetime.now().year)
-        mes = request.query_params.get('mes', datetime.now().month)
-        empresas = Empresa.objects.all()
+        mes = request.query_params.get("mes") or mes_mais_recente(MontseguroLead.objects.all())
+        if mes is None:
+            return Response({"detail": "Sem dados carregados."}, status=404)
+
+        inicio_mes, fim_mes = limites_do_mes(mes)
+
+        # --- Dias úteis (simplificado para 22 dias úteis) ---
+        dias_uteis_mes = 22
+        # Dia atual dentro do mês (usamos a data atual para simular "hoje")
+        dia_corrido = min(datetime.now().day, dias_uteis_mes)
+
+        # --- Configuração das empresas ---
+        empresas_config = [
+            {
+                "nome": "Montseguro",
+                "empresa_choice": Empresa.MONTSEGURO,
+                "comissao": COMISSAO_MONTSEGURO,
+                "model_lead": MontseguroLead,
+                "model_funil": MontseguroFunil,
+                "model_cliente": MontseguroClienteAtivo,
+            },
+            {
+                "nome": "Prop5",
+                "empresa_choice": Empresa.PROP5,
+                "model_lead": Prop5Lead,
+                "model_op": Prop5Oportunidade,
+            },
+            {
+                "nome": "TechBrabo",
+                "empresa_choice": Empresa.TECHBRABO,
+                "model_lead": TechbraboLead,
+                "model_op": TechbraboOportunidade,
+            },
+        ]
+
         resultado = []
-        for emp in empresas:
-            receita = Oportunidade.objects.filter(
-                empresa=emp, status='Ganha',
-                data_previsao_fechamento__year=ano,
-                data_previsao_fechamento__month=mes
-            ).aggregate(total=Sum('receita_reconhecida'))['total'] or 0
+        receita_total = Decimal("0")
+        meta_total = Decimal("0")
+        forecast_total = Decimal("0")
+        investimento_total = Decimal("0")
+        qtd_negocios_total = 0
+        meta_esperada_total = Decimal("0")
+        gap_ritmo_total = Decimal("0")
+        leads_total = 0  # <-- NOVO: acumular leads
 
-            meta_obj = Meta.objects.filter(
-                empresa=emp, ano_mes=f"{ano}-{str(mes).zfill(2)}"
-            ).first()
-            meta_valor = meta_obj.meta_receita if meta_obj else 0
-
-            pipeline = Oportunidade.objects.filter(
-                empresa=emp, status='Aberta',
-                data_previsao_fechamento__year=ano,
-                data_previsao_fechamento__month=mes
-            ).aggregate(
-                total=Sum(ExpressionWrapper(F('valor_potencial') * F('probabilidade'), output_field=FloatField()))
-            )['total'] or 0
-
-            forecast = receita + pipeline
-            atingimento = round(receita / meta_valor * 100, 2) if meta_valor else 0
-
-            resultado.append({
-                'empresa': emp.nome,
-                'receita': receita,
-                'meta': meta_valor,
-                'atingimento': atingimento,
-                'forecast': forecast,
-                'gap': forecast - meta_valor,
+        # --- Variáveis para evolução da receita (últimos 6 meses) ---
+        evolucao_receita = []
+        for i in range(6):
+            mes_hist = mes
+            for _ in range(i):
+                mes_hist = _mes_anterior(mes_hist)
+            # Calcular receita total daquele mês (simplificado)
+            _, fim_mes_hist = limites_do_mes(mes_hist)
+            receita_hist = Decimal("0")
+            for emp in empresas_config:
+                nome = emp["nome"]
+                if nome == "Montseguro":
+                    ativos_hist = MontseguroClienteAtivo.objects.filter(
+                        data_ativacao__lte=fim_mes_hist
+                    ).exclude(cancelado=True, data_cancelamento__lte=fim_mes_hist)
+                    premio_hist = ativos_hist.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+                    receita_hist += round(premio_hist * emp["comissao"], 2)
+                elif nome == "Prop5":
+                    fechamentos_hist = Prop5Oportunidade.objects.filter(
+                        estagio="Fechado",
+                        data_fechamento__gte=limites_do_mes(mes_hist)[0],
+                        data_fechamento__lte=fim_mes_hist
+                    )
+                    receita_hist += fechamentos_hist.aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+                else:
+                    mrr_hist = _mrr_ate(fim_mes_hist)
+                    receita_pontual_hist = TechbraboOportunidade.objects.filter(
+                        estagio="Contrato assinado",
+                        tipo_receita="Pontual",
+                        data_contrato__gte=limites_do_mes(mes_hist)[0],
+                        data_contrato__lte=fim_mes_hist
+                    ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+                    receita_hist += mrr_hist + receita_pontual_hist
+            evolucao_receita.append({
+                "mes": mes_hist,
+                "receita": receita_hist,
             })
-        return Response(resultado)
+        evolucao_receita = sorted(evolucao_receita, key=lambda x: x["mes"])
+
+        # --- Loop por empresa ---
+        for emp in empresas_config:
+            nome = emp["nome"]
+            empresa_choice = emp["empresa_choice"]
+
+            # --- 1. Receita, Meta, Forecast e Quantidade de Negócios ---
+            if nome == "Montseguro":
+                ativos = MontseguroClienteAtivo.objects.filter(
+                    data_ativacao__lte=fim_mes
+                ).exclude(cancelado=True, data_cancelamento__lte=fim_mes)
+                premio_total = ativos.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+                receita = round(premio_total * emp["comissao"], 2)
+
+                meta_obj = MetaEmpresa.objects.filter(empresa=empresa_choice, mes=mes).first()
+                meta = meta_obj.meta_receita if meta_obj else Decimal("0")
+
+                # Forecast: receita + pipeline (propostas em aberto com taxa de conversão estimada)
+                propostas_abertas = MontseguroFunil.objects.filter(
+                    data_proposta__isnull=False,
+                    data_contratacao__isnull=True,
+                    data_implantacao__isnull=True,
+                )
+                pipeline = sum(
+                    (p.premio_mensal_estimado * 12 * Decimal("0.4") * emp["comissao"])
+                    for p in propostas_abertas
+                )
+                forecast = receita + pipeline
+
+                # Quantidade de negócios (contratações no mês)
+                qtd_negocios = MontseguroFunil.objects.filter(
+                    data_contratacao__gte=inicio_mes,
+                    data_contratacao__lte=fim_mes
+                ).count()
+
+                # Ticket médio = receita / qtd_negocios (se houver)
+                ticket_medio = round(receita / qtd_negocios, 2) if qtd_negocios else Decimal("0")
+
+                # Leads do mês
+                leads_empresa = MontseguroLead.objects.filter(mes_referencia=mes).count()
+
+            elif nome == "Prop5":
+                fechamentos = Prop5Oportunidade.objects.filter(
+                    estagio="Fechado",
+                    data_fechamento__gte=inicio_mes,
+                    data_fechamento__lte=fim_mes
+                )
+                receita = fechamentos.aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+
+                meta_obj = MetaEmpresa.objects.filter(empresa=empresa_choice, mes=mes).first()
+                meta = meta_obj.meta_receita if meta_obj else Decimal("0")
+
+                pipeline_aberto = Prop5Oportunidade.objects.filter(
+                    lead__data_criacao__lte=fim_mes
+                ).exclude(estagio__in=["Fechado", "Perdido"])
+                pipeline = sum(
+                    (op.valor_estimado * (op.probabilidade or Decimal("0"))) for op in pipeline_aberto
+                )
+                forecast = receita + pipeline
+                qtd_negocios = fechamentos.count()
+                ticket_medio = round(receita / qtd_negocios, 2) if qtd_negocios else Decimal("0")
+                leads_empresa = Prop5Lead.objects.filter(mes_referencia=mes).count()
+
+            else:  # TechBrabo
+                mrr = _mrr_ate(fim_mes)
+                receita_pontual = TechbraboOportunidade.objects.filter(
+                    estagio="Contrato assinado",
+                    tipo_receita="Pontual",
+                    data_contrato__gte=inicio_mes,
+                    data_contrato__lte=fim_mes
+                ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+                receita = mrr + receita_pontual
+
+                meta_obj = MetaEmpresa.objects.filter(empresa=empresa_choice, mes=mes).first()
+                meta = meta_obj.meta_receita if meta_obj else Decimal("0")
+
+                pipeline = TechbraboOportunidade.objects.filter(
+                    estagio="Proposta enviada",
+                    lead__data_criacao__lte=fim_mes
+                ).aggregate(total=Sum("valor_proposta"))["total"] or Decimal("0")
+                forecast = receita + pipeline
+
+                qtd_negocios = TechbraboOportunidade.objects.filter(
+                    estagio="Contrato assinado",
+                    data_contrato__gte=inicio_mes,
+                    data_contrato__lte=fim_mes
+                ).count()
+                ticket_medio = round(receita / qtd_negocios, 2) if qtd_negocios else Decimal("0")
+                leads_empresa = TechbraboLead.objects.filter(mes_referencia=mes).count()
+
+            # Acumular leads totais
+            leads_total += leads_empresa
+
+            # --- 2. Metas e ritmo ---
+            meta_esperada = meta * Decimal(str(dia_corrido / dias_uteis_mes))
+            gap_ritmo = receita - meta_esperada
+            necessidade_diaria = (meta - receita) / Decimal(str(max(dias_uteis_mes - dia_corrido, 1)))
+            dias_uteis_restantes = dias_uteis_mes - dia_corrido
+
+            # --- 3. Marketing ---
+            investimento = Marketing.objects.filter(
+                empresa=empresa_choice, mes=mes
+            ).aggregate(total=Sum("investimento"))["total"] or Decimal("0")
+            cac = round(investimento / qtd_negocios, 2) if qtd_negocios else None
+            roi_marketing = round((receita - investimento) / investimento * 100, 1) if investimento else None
+
+            # --- 4. Crescimento MoM ---
+            mes_anterior = _mes_anterior(mes)
+            _, fim_mes_anterior = limites_do_mes(mes_anterior)
+            if nome == "Montseguro":
+                ativos_ant = MontseguroClienteAtivo.objects.filter(
+                    data_ativacao__lte=fim_mes_anterior
+                ).exclude(cancelado=True, data_cancelamento__lte=fim_mes_anterior)
+                premio_ant = ativos_ant.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+                receita_anterior = round(premio_ant * emp["comissao"], 2)
+            elif nome == "Prop5":
+                fechamentos_ant = Prop5Oportunidade.objects.filter(
+                    estagio="Fechado",
+                    data_fechamento__gte=limites_do_mes(mes_anterior)[0],
+                    data_fechamento__lte=fim_mes_anterior
+                )
+                receita_anterior = fechamentos_ant.aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+            else:
+                mrr_ant = _mrr_ate(fim_mes_anterior)
+                receita_pontual_ant = TechbraboOportunidade.objects.filter(
+                    estagio="Contrato assinado",
+                    tipo_receita="Pontual",
+                    data_contrato__gte=limites_do_mes(mes_anterior)[0],
+                    data_contrato__lte=fim_mes_anterior
+                ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+                receita_anterior = mrr_ant + receita_pontual_ant
+
+            crescimento_mom = round((receita - receita_anterior) / receita_anterior * 100, 1) if receita_anterior else None
+
+            # --- 5. Montar resultado por empresa ---
+            resultado.append({
+                "empresa": nome,
+                "receita": receita,
+                "meta": meta,
+                "atingimento_pct": round(float(receita) / float(meta) * 100, 1) if meta else None,
+                "forecast": forecast,
+                "gap": forecast - meta,
+                "meta_esperada_ate_hoje": meta_esperada,
+                "gap_ritmo": gap_ritmo,
+                "necessidade_diaria": necessidade_diaria,
+                "dias_uteis_restantes": dias_uteis_restantes,
+                "crescimento_mom_pct": crescimento_mom,
+                "investimento_marketing": investimento,
+                "cac": cac,
+                "roi_marketing_pct": roi_marketing,
+                "qtd_negocios": qtd_negocios,
+                "ticket_medio": ticket_medio,
+                "leads": leads_empresa,  # <-- NOVO: leads por empresa
+            })
+
+            # Acumular totais
+            receita_total += receita
+            meta_total += meta
+            forecast_total += forecast
+            investimento_total += investimento
+            qtd_negocios_total += qtd_negocios
+            meta_esperada_total += meta_esperada
+            gap_ritmo_total += gap_ritmo
+
+        # --- Totais do grupo ---
+        atingimento_geral = round(float(receita_total) / float(meta_total) * 100, 1) if meta_total else None
+        ticket_medio_consolidado = round(receita_total / qtd_negocios_total, 2) if qtd_negocios_total else Decimal("0")
+        cac_medio = round(investimento_total / qtd_negocios_total, 2) if qtd_negocios_total else None
+        roi_marketing_geral = round((receita_total - investimento_total) / investimento_total * 100, 1) if investimento_total else None
+
+        # Taxa de conversão geral (negócios / leads)
+        taxa_conversao_geral = round(qtd_negocios_total / leads_total * 100, 1) if leads_total else None
+
+        # Crescimento MoM do grupo (já calculado? vamos refazer com base na receita anterior total)
+        mes_anterior = _mes_anterior(mes)
+        _, fim_mes_ant = limites_do_mes(mes_anterior)
+        receita_anterior_total = Decimal("0")
+        for emp in empresas_config:
+            nome = emp["nome"]
+            if nome == "Montseguro":
+                ativos_ant = MontseguroClienteAtivo.objects.filter(
+                    data_ativacao__lte=fim_mes_ant
+                ).exclude(cancelado=True, data_cancelamento__lte=fim_mes_ant)
+                premio_ant = ativos_ant.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+                receita_anterior_total += round(premio_ant * emp["comissao"], 2)
+            elif nome == "Prop5":
+                fechamentos_ant = Prop5Oportunidade.objects.filter(
+                    estagio="Fechado",
+                    data_fechamento__gte=limites_do_mes(mes_anterior)[0],
+                    data_fechamento__lte=fim_mes_ant
+                )
+                receita_anterior_total += fechamentos_ant.aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+            else:
+                mrr_ant = _mrr_ate(fim_mes_ant)
+                receita_pontual_ant = TechbraboOportunidade.objects.filter(
+                    estagio="Contrato assinado",
+                    tipo_receita="Pontual",
+                    data_contrato__gte=limites_do_mes(mes_anterior)[0],
+                    data_contrato__lte=fim_mes_ant
+                ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+                receita_anterior_total += mrr_ant + receita_pontual_ant
+
+        crescimento_mom_geral = round((receita_total - receita_anterior_total) / receita_anterior_total * 100, 1) if receita_anterior_total else None
+
+        # Necessidade diária total
+        necessidade_diaria_total = round((meta_total - receita_total) / Decimal(str(max(dias_uteis_mes - dia_corrido, 1))), 2) if meta_total else Decimal("0")
+        dias_uteis_restantes = dias_uteis_mes - dia_corrido
+
+        return Response({
+            "mes": mes,
+            "empresas": resultado,
+            "total": {
+                "receita_total": receita_total,
+                "meta_total": meta_total,
+                "atingimento_geral_pct": atingimento_geral,
+                "forecast_total": forecast_total,
+                "gap_total": forecast_total - meta_total,
+                "meta_esperada_ate_hoje": meta_esperada_total,
+                "gap_ritmo_total": gap_ritmo_total,
+                "necessidade_diaria_total": necessidade_diaria_total,
+                "dias_uteis_restantes": dias_uteis_restantes,
+                "crescimento_mom_pct": crescimento_mom_geral,
+                "investimento_marketing_total": investimento_total,
+                "cac_medio": cac_medio,
+                "roi_marketing_geral_pct": roi_marketing_geral,
+                "qtd_negocios_total": qtd_negocios_total,
+                "ticket_medio_consolidado": ticket_medio_consolidado,
+                # NOVOS campos
+                "leads_total": leads_total,
+                "taxa_conversao_geral_pct": taxa_conversao_geral,
+                "evolucao_receita": evolucao_receita,  # lista de {mes, receita}
+            }
+        })
+
 
