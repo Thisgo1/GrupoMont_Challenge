@@ -5,6 +5,8 @@ from .models import (
     TechbraboOportunidade, TechbraboProjeto,
     Marketing, MetaEmpresa,
 )
+from django.urls import path, include
+
 
 
 class MontseguroFunilSerializer(serializers.ModelSerializer):
