@@ -1,0 +1,312 @@
+:root {
+  --paper: #f3f5f7;
+  --panel: #ffffff;
+  --ink-900: #101b2d;
+  --ink-600: #56606f;
+  --ink-400: #8b95a3;
+  --line: #d8dee4;
+  --line-strong: #b7c0ca;
+
+  --accent-montseguro: #1f6f6b;
+  --accent-prop5: #a9791f;
+  --accent-techbrabo: #4c3f91;
+
+  --status-verde: #2e7d57;
+  --status-amarelo: #b4841f;
+  --status-vermelho: #b23a2e;
+
+  --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius: 3px;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink-900);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink-900);
+}
+
+h1 { font-size: 22px; letter-spacing: 0.2px; }
+h2 { font-size: 26px; margin-bottom: 6px; }
+h3 { font-size: 16px; margin-bottom: 12px; color: var(--ink-900); }
+
+p { line-height: 1.5; }
+
+a { color: inherit; }
+
+button { font-family: var(--font-body); }
+
+/* ---------------- Layout ---------------- */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.sidebar-subbrand {
+  font-size: 12px;
+  color: var(--ink-400);
+  margin-bottom: 32px;
+}
+
+.nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--ink-600);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.nav-item:hover {
+  color: var(--ink-900);
+  background: var(--paper);
+}
+
+.nav-item.active {
+  border-left: 2px solid var(--ink-900);
+  color: var(--ink-900);
+  font-weight: 600;
+  background: var(--paper);
+}
+
+.main {
+  flex: 1;
+  padding: 40px 48px;
+
+}
+
+.page-header {
+  margin-bottom: 28px;
+}
+
+.page-subtitle {
+  color: var(--ink-600);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+/* ---------------- Empresa switcher (sem pílula) ---------------- */
+.empresa-switch {
+  display: flex;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+
+.empresa-switch a {
+  text-decoration: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 2px 10px;
+  font-size: 14px;
+  color: var(--ink-400);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.empresa-switch a:hover { color: var(--ink-900); }
+
+.empresa-switch a.active {
+  color: var(--ink-900);
+  font-weight: 600;
+  border-bottom-color: var(--empresa-accent, var(--ink-900));
+}
+
+.mes-select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-900);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  margin-bottom: 20px;
+}
+
+.accent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--empresa-accent, var(--ink-400));
+  display: inline-block;
+}
+
+/* ---------------- KPI cards ---------------- */
+.kpi-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin-bottom: 8px;
+}
+
+.kpi-card {
+  background: var(--panel);
+  padding: 16px 18px;
+  min-width: 160px;
+  flex: 1 1 160px;
+  border-top: 2px solid var(--kpi-accent, var(--ink-900));
+}
+
+.kpi-label {
+  font-size: 12.5px;
+  color: var(--ink-600);
+  margin-bottom: 8px;
+}
+
+.kpi-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-900);
+}
+
+.kpi-value.status-verde { color: var(--status-verde); }
+.kpi-value.status-amarelo { color: var(--status-amarelo); }
+.kpi-value.status-vermelho { color: var(--status-vermelho); }
+
+/* ---------------- Section / empresa block ---------------- */
+.section {
+  margin-bottom: 36px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* ---------------- Funnel  ---------------- */
+.funil-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.funil-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.funil-num {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--ink-400);
+  width: 16px;
+}
+
+.funil-label {
+  font-size: 14px;
+  color: var(--ink-900);
+  width: 190px;
+  flex-shrink: 0;
+}
+
+.funil-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--paper);
+}
+
+.funil-bar-fill {
+  height: 100%;
+  background: var(--funil-accent, var(--ink-900));
+}
+
+.funil-value {
+  font-family: var(--font-display);
+  font-size: 15px;
+  width: 48px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- Table ---------------- */
+table.data-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 560px;
+  font-size: 14px;
+}
+
+table.data-table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--ink-600);
+  padding: 6px 10px 6px 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+table.data-table td {
+  padding: 7px 10px 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- Insight cards ---------------- */
+.insight {
+  border-left: 3px solid var(--insight-accent, var(--ink-900));
+  background: var(--panel);
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.insight strong { font-weight: 600; }
+
+.muted { color: var(--ink-600); font-size: 13px; }
