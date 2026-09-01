@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 markdown
+=======
+>>>>>>> ebe9cb67065704b6a95a87ca70df959bc3f0443a
 # 🚀 Dashboard Executivo — Grupo Mont
 
 **Desafio técnico** | Montseguro · Prop5 · TechBrabo
@@ -43,6 +46,7 @@ Modelos separados por empresa:
 
 ### Endpoints de KPI
 
+<<<<<<< HEAD
 | Endpoint | Descrição |
 |----------|-----------|
 | `/api/montseguro/kpis/` | KPIs específicos da Montseguro (receita de comissão, churn, CAC, vidas ativas, taxas de conversão e implantação) |
@@ -57,6 +61,27 @@ Modelos separados por empresa:
 
 ### Frontend (React + shadcn/ui + Tailwind)
 
+=======
+Cada empresa tem seu próprio endpoint com KPIs específicos:
+
+| Endpoint | O que retorna |
+|----------|---------------|
+| `/montseguro/kpis/` | Receita de comissão, churn, CAC, vidas ativas, taxas de conversão e implantação |
+| `/prop5/kpis/` | Comissão realizada, pipeline ponderado, ciclo médio, CAC |
+| `/techbrabo/kpis/` | MRR, crescimento, margem, SLA, receita pontual |
+
+Além disso, criei endpoints consolidados:
+
+- `/kpis/ceo-overview/` — visão de grupo com receita, meta, atingimento, forecast e gap
+- `/kpis/comparativos/` — produtividade ajustada, CPLQ e conversão ajustada (indicadores comparáveis entre empresas)
+- `/kpis/evolucao-receita/` — série histórica de 6 meses
+- `/kpis/metas-projecao/` — ritmo de meta, necessidade diária e gap de ritmo
+
+### Frontend (React + shadcn/ui + Tailwind)
+
+Decidi usar shadcn/ui porque ele já entrega componentes acessíveis e estilizados com Tailwind, o que me permitiu focar na lógica de negócio em vez de ficar ajustando CSS. A experiência ficou limpa, consistente e responsiva.
+
+>>>>>>> ebe9cb67065704b6a95a87ca70df959bc3f0443a
 **Páginas implementadas**:
 
 1. **CEO Overview** — consolidado do grupo com cards de totais, gráfico comparativo, banner de insights e detalhamento por empresa. É a primeira tela que o CEO vê.
@@ -67,10 +92,23 @@ Modelos separados por empresa:
 6. **Comparativos** — indicadores padronizados entre empresas, com tabela e cards de destaque.
 7. **Metas e Projeção** — acompanhamento de ritmo de meta com meta esperada até hoje, gap de ritmo e necessidade diária.
 
+<<<<<<< HEAD
+=======
+### Componentes reutilizáveis
+
+- `KpiCard` — exibe valor com formatação (moeda, percentual, dias) e status de semáforo
+- `BarList` — barras horizontais para funis e rankings
+- `RankingTable` — performance de vendedores
+- `StatusTable` — distribuição de status
+- `MesSelector` — seletor de mês (acumulado ou mês específico)
+- `EmpresaLogo` — logo ou iniciais estilizadas
+
+>>>>>>> ebe9cb67065704b6a95a87ca70df959bc3f0443a
 ---
 
 ## 📊 KPIs que eu escolhi e por quê
 
+<<<<<<< HEAD
 ### Montseguro
 
 | KPI | Finalidade | Fórmula |
@@ -109,17 +147,32 @@ Modelos separados por empresa:
 | **% de Projetos no Prazo** | Capacidade de entrega | projetos concluídos sem atraso / total de concluídos |
 | **Expansão vs. Novo Cliente** | Origem do crescimento | Σ valor_contrato com cliente_existente / receita total |
 | **CAC** | Custo de aquisição por contrato | investimento de Marketing / novos contratos |
+=======
+O briefing não entregou uma lista fechada de KPIs — e isso foi proposital. A ideia era justamente avaliar se eu sabia identificar o que realmente importa. Esses foram os meus critérios:
+
+- **Montseguro**: receita de comissão (não prêmio bruto), taxa de implantação (gargalo operacional), vidas ativas (tamanho da carteira) e churn.
+- **Prop5**: comissão realizada (não valor do imóvel), pipeline ponderado (não bruto), ciclo médio de venda e CAC.
+- **TechBrabo**: MRR (base previsível), margem média (sustentabilidade), % de projetos no prazo (capacidade operacional) e expansão vs. cliente novo.
+
+A escolha de cada KPI está documentada em `kpis-grupo-mont.md`, com nome, fórmula, fonte e interpretação.
+>>>>>>> ebe9cb67065704b6a95a87ca70df959bc3f0443a
 
 ---
 
 ## 🔍 Dados faltantes (e o que eu fiz sobre isso)
 
+<<<<<<< HEAD
+=======
+O briefing diz: *"Dados faltantes também são um achado"*. Isso me chamou atenção.
+
+>>>>>>> ebe9cb67065704b6a95a87ca70df959bc3f0443a
 Identifiquei campos que seriam necessários para uma análise mais precisa, mas que não estavam disponíveis:
 
 - **Montseguro**: % de comissão por operadora (usei uma média fixa de 15%)
 - **Prop5**: data de renovação de contratos (não temos churn real)
 - **TechBrabo**: horas apontadas por projeto (margem é estimada)
 
+<<<<<<< HEAD
 Documentei essas limitações e, para demonstrar como seria com dados completos, criei um script de enriquecimento que gera uma versão estendida do JSON com campos extras.
 
 ---
@@ -190,10 +243,34 @@ Rodando sem o script automático (passo a passo manual)
 Se preferir fazer manualmente:
 
 Backend
+=======
+Documentei essas limitações em `docs/dados-faltantes.md` e, para demonstrar como seria com dados completos, criei um script (`enrich_mock_data.py`) que gera uma versão enriquecida do JSON com campos extras.
+
+---
+
+## 🎨 Extras que adicionei
+
+Além do escopo mínimo, adicionei alguns diferenciais:
+
+- **Dark mode** — toggle na sidebar, com persistência via localStorage
+- **Tipografia refinada** — Geist Variable, com hierarquia clara e `tabular-nums` pra números
+- **Gráfico de evolução da receita** — últimos 6 meses, com linhas por empresa e total do grupo
+- **Banner de insights** na página CEO Overview — os 3 alertas mais importantes ficam visíveis imediatamente
+- **Página de Metas e Projeção** — ritmo de meta, gap e necessidade diária
+- **Logos das empresas** — iniciais estilizadas (ou imagens, se disponíveis)
+- **Responsividade** — sidebar colapsável em mobile e grids adaptáveis
+
+---
+
+## 🛠️ Como rodar o projeto
+
+### Backend (Django)
+>>>>>>> ebe9cb67065704b6a95a87ca70df959bc3f0443a
 
 ```bash
 cd backend
 python -m venv venv
+<<<<<<< HEAD
 source venv/bin/activate      # Linux/Mac
 # ou venv\Scripts\activate   # Windows
 pip install -r requirements.txt
@@ -285,3 +362,11 @@ Este projeto foi desenvolvido como parte de um desafio técnico para o Grupo Mon
 
 Desenvolvido por — Thiago Silva Ribeiro
 Data — Setembro de 2026
+=======
+source venv/bin/activate  # ou venv\Scripts\activate no Windows
+pip install -r requirements.txt
+python manage.py makemigrations
+python manage.py migrate
+python manage.py load_mock_data --path ../mock-data-grupo-mont.json
+python manage.py runserver
+>>>>>>> ebe9cb67065704b6a95a87ca70df959bc3f0443a
