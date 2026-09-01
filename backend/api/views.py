@@ -132,6 +132,106 @@ class MontseguroKpisView(APIView):
             "atingimento_meta_pct": atingimento_meta,
         })
 
+# ---------------------------------------------------------------
+# PROP5 — pipeline consultivo de alto valor: valor de imóvel != receita,
+# pipeline != venda fechada, ciclo longo 
+# ---------------------------------------------------------------
+class Prop5KpisView(APIView):
+    def get(self, request):
+        mes = request.query_params.get("mes") or mes_mais_recente(Prop5Lead.objects.all())
+        if mes is None:
+            return Response({"detail": "Sem dados carregados."}, status=404)
+
+        inicio_mes, fim_mes = limites_do_mes(mes)
+
+        leads_no_mes = Prop5Lead.objects.filter(mes_referencia=mes).count()
+
+        # --- Fechamentos e receita realizada (comissão, não valor do imóvel) ---
+        fechamentos_no_mes = Prop5Oportunidade.objects.filter(
+            estagio="Fechado", data_fechamento__gte=inicio_mes, data_fechamento__lte=fim_mes
+        )
+        n_fechamentos = fechamentos_no_mes.count()
+        receita_comissao_mes = fechamentos_no_mes.aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+
+        # --- Pipeline ponderado ---
+        # Limitação assumida: não guardamos histórico de mudança de estágio,
+        # então isto é uma fotografia do estado ATUAL das oportunidades abertas
+        # criadas até o fim do mês consultado — não "como o pipeline estava"
+        # naquele momento passado. Pra rastrear isso de verdade seria preciso
+        # uma tabela de histórico de estágio por oportunidade.
+        pipeline_aberto = Prop5Oportunidade.objects.filter(
+            lead__data_criacao__lte=fim_mes
+        ).exclude(estagio__in=["Fechado", "Perdido"]).select_related("lead")
+        pipeline_ponderado = sum(
+            (op.valor_estimado * (op.probabilidade or Decimal("0"))) for op in pipeline_aberto
+        )
+        pipeline_ponderado = round(pipeline_ponderado, 2)
+
+        # --- Taxa de conversão lead -> fechamento (mesma aproximação de mês
+        # corrido já documentada na MontseguroKpisView) ---
+        taxa_conversao = round(n_fechamentos / leads_no_mes * 100, 1) if leads_no_mes else None
+
+        # --- Ciclo médio de venda (dias entre criação do lead e fechamento) ---
+        dias_ciclo = [
+            (op.data_fechamento - op.lead.data_criacao).days
+            for op in fechamentos_no_mes.select_related("lead")
+            if op.data_fechamento and op.lead.data_criacao
+        ]
+        ciclo_medio_dias = round(sum(dias_ciclo) / len(dias_ciclo), 1) if dias_ciclo else None
+
+        # --- Ticket médio por operação fechada ---
+        ticket_medio = None
+        if n_fechamentos:
+            soma_valor_fechado = fechamentos_no_mes.aggregate(total=Sum("valor_fechado"))["total"] or Decimal("0")
+            ticket_medio = round(soma_valor_fechado / n_fechamentos, 2)
+
+        # --- CAC ---
+        investimento_mkt = Marketing.objects.filter(
+            empresa=Empresa.PROP5, mes=mes
+        ).aggregate(total=Sum("investimento"))["total"] or Decimal("0")
+        cac = round(investimento_mkt / n_fechamentos, 2) if n_fechamentos else None
+
+        # --- Atingimento de meta ---
+        meta = MetaEmpresa.objects.filter(empresa=Empresa.PROP5, mes=mes).first()
+        atingimento_meta = (
+            round(float(receita_comissao_mes) / float(meta.meta_receita) * 100, 1)
+            if meta and meta.meta_receita else None
+        )
+
+        return Response({
+            "mes": mes,
+            "leads_no_mes": leads_no_mes,
+            "fechamentos_no_mes": n_fechamentos,
+            "receita_comissao_mes": receita_comissao_mes,
+            "pipeline_ponderado": pipeline_ponderado,
+            "taxa_conversao_lead_fechamento_pct": taxa_conversao,
+            "ciclo_medio_dias": ciclo_medio_dias,
+            "ticket_medio_fechado": ticket_medio,
+            "cac": cac,
+            "meta_receita": meta.meta_receita if meta else None,
+            "atingimento_meta_pct": atingimento_meta,
+        })
+
+
+def _mrr_ate(fim_mes):
+    """Soma o MRR de todos os contratos recorrentes/híbridos assinados até
+    a data informada. Limitação assumida: a base não guarda data de
+    encerramento de contrato recorrente (churn) da TechBrabo, então tratamos
+    todo contrato com mrr preenchido como ainda ativo indefinidamente. Isso
+    tende a superestimar o MRR em bases reais — vale apontar isso como
+    'dado faltante' na apresentação, igual foi feito pro churn da Montseguro.
+    """
+    return TechbraboOportunidade.objects.filter(
+        mrr__isnull=False, data_contrato__lte=fim_mes
+    ).aggregate(total=Sum("mrr"))["total"] or Decimal("0")
+
+
+def _mes_anterior(mes_str):
+    ano, mes = map(int, mes_str.split("-"))
+    if mes == 1:
+        return f"{ano - 1}-12"
+    return f"{ano}-{mes - 1:02d}"
+
 
 class CEOOverviewAPIView(APIView):
     def get(self, request):
