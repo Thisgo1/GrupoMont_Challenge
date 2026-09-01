@@ -1,28 +1,22 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import (
-    EmpresaViewSet, VendedorViewSet, CanalViewSet,
-    CampanhaViewSet, OportunidadeViewSet, MetaViewSet,
-    MarketingInvestimentoViewSet,
-    CEOOverviewAPIView, MontseguroKPIAPIView,
-    Prop5KPIAPIView, TechBraboKPIAPIView,
-    ComparativosKPIAPIView
-)
-
-router = DefaultRouter()
-router.register(r'empresas', EmpresaViewSet)
-router.register(r'vendedores', VendedorViewSet)
-router.register(r'canais', CanalViewSet)
-router.register(r'campanhas', CampanhaViewSet)
-router.register(r'oportunidades', OportunidadeViewSet)
-router.register(r'metas', MetaViewSet)
-router.register(r'marketing-investimentos', MarketingInvestimentoViewSet)
+from django.urls import path
+from . import views
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('kpis/ceo-overview/', CEOOverviewAPIView.as_view(), name='ceo-overview'),
-    path('kpis/montseguro/', MontseguroKPIAPIView.as_view(), name='montseguro'),
-    # path('kpis/prop5/', Prop5KPIAPIView.as_view(), name='prop5'),
-    # path('kpis/techbrabo/', TechBraboKPIAPIView.as_view(), name='techbrabo'),
-    # path('kpis/comparativos/', ComparativosKPIAPIView.as_view(), name='comparativos'),
+    # KPIs (visão executiva por empresa)
+    path("montseguro/kpis/", views.MontseguroKpisView.as_view(), name="montseguro-kpis"),
+    path("prop5/kpis/", views.Prop5KpisView.as_view(), name="prop5-kpis"),
+    path("techbrabo/kpis/", views.TechbraboKpisView.as_view(), name="techbrabo-kpis"),
+
+    # Dados brutos (funis, projetos, marketing, metas) pra gráficos e drill-down
+    path("montseguro/funil/", views.MontseguroFunilListView.as_view(), name="montseguro-funil"),
+    path("montseguro/clientes-ativos/", views.MontseguroClienteAtivoListView.as_view(), name="montseguro-clientes"),
+    path("prop5/oportunidades/", views.Prop5OportunidadeListView.as_view(), name="prop5-oportunidades"),
+    path("techbrabo/oportunidades/", views.TechbraboOportunidadeListView.as_view(), name="techbrabo-oportunidades"),
+    path("techbrabo/projetos/", views.TechbraboProjetoListView.as_view(), name="techbrabo-projetos"),
+    path("marketing/", views.MarketingListView.as_view(), name="marketing"),
+    path("metas/", views.MetaEmpresaListView.as_view(), name="metas"),
+    path("kpis/ceo-overview/", views.CEOOverviewView.as_view(), name="ceo-overview"),
+    path("kpis/comparativos/", views.ComparativosView.as_view(), name="comparativos"),
+    path("kpis/evolucao-receita/", views.EvolucaoReceitaView.as_view(), name="evolucao-receita"),
+    path("kpis/metas-projecao/", views.MetasProjecaoView.as_view(), name="metas-projecao"),
 ]
