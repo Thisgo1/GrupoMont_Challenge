@@ -1,0 +1,439 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@fontsource-variable/geist";
+
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: 'Geist Variable', sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+.empresa-switch .active {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-weight: 600;
+  border-bottom: 3px solid var(--empresa-accent, #1e293b);
+}
+
+.empresa-switch button,
+.empresa-switch a {
+  display: flex;
+  flex-direction: row; /* força linha */
+  align-items: center;
+  gap: 0.5rem; /* espaçamento entre logo e texto */
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-decoration: none;
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.empresa-switch button:hover,
+.empresa-switch a:hover {
+  background: rgba(255,255,255,0.5);
+}
+
+.empresa-switch button.active,
+.empresa-switch a.active {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-bottom: 3px solid var(--empresa-accent, #1e293b);
+}
+
+.insight-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ===== ESTILOS GLOBAIS MODERNOS ===== */
+
+/* Fundo da página com gradiente sutil */
+body {
+  background: #f1f5f9;
+  background-image: radial-gradient(circle at 0% 0%, rgba(255,255,255,0.5) 0%, transparent 50%);
+  min-height: 100vh;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Aplicação com fundo semi-transparente */
+#root {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(2px);
+  min-height: 100vh;
+  border: none; /* removemos a borda lateral */
+  box-shadow: 0 0 40px rgba(0,0,0,0.02);
+  padding: 0;
+}
+
+/* Sidebar moderna */
+.sidebar {
+  background: #0f172a;
+  height: 100vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  border-right: 1px solid rgba(255,255,255,0.05);
+  color: #e2e8f0;
+}
+
+.sidebar-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: white;
+  padding: 1.5rem 1.5rem 0.25rem;
+}
+
+.sidebar-subbrand {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  padding: 0 1.5rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Navegação da sidebar */
+.nav-list {
+  list-style: none;
+  padding: 1rem 0.75rem;
+  margin: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: white;
+}
+
+.nav-item.active {
+  background: rgba(255,255,255,0.08);
+  color: white;
+  box-shadow: inset 3px 0 0 var(--sidebar-accent, #3b82f6);
+}
+
+.page-container {
+  padding: 2rem 1.5rem;
+}
+
+/* Header da página */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1.5rem 0 0.5rem;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.page-header h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  -webkit-text-fill-color: #64748b;
+}
+
+h1, h2, h3 {
+  font-family: 'Geist Variable', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em; /* mais compacto, moderno */
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Cards com efeito moderno */
+.kpi-card,
+.card {
+    padding: 1.25rem;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.02);
+  transition: all 0.2s;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.kpi-card .card-content {
+  padding: 1.25rem;
+}
+
+
+.kpi-card:hover,
+.card:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+  transform: translateY(-2px);
+  border-color: rgba(0,0,0,0.06);
+}
+
+/* Seções com separador suave */
+.section {
+  padding: 1.5rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.section-title h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  color: #0f172a;
+}
+
+.accent-dot {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background-color: var(--empresa-accent, #3b82f6);
+  flex-shrink: 0;
+}
+
+/* Tabelas mais elegantes */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.data-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.data-table tr:hover td {
+  background: #f8fafc;
+}
+
+/* Switch entre empresas */
+.empresa-switch {
+  display: flex;
+  gap: 1.25rem;
+  background: #f1f5f9;
+  padding: 0.50rem;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+}
+
+.empresa-switch a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.empresa-switch a:hover {
+  background: rgba(255,255,255,0.5);
+}
+
+.empresa-switch a.active {
+  background: white;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Select do shadcn com fundo correto */
+[data-radix-popper-content-wrapper] {
+  background-color: white !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+  border: 1px solid rgba(0,0,0,0.04) !important;
+}
+
+.dark [data-radix-popper-content-wrapper] {
+  background-color: #1e293b !important;
+}
+
+/* Valores de status */
+.status-verde {
+  color: #16a34a;
+}
+.status-amarelo {
+  color: #eab308;
+}
+.status-vermelho {
+  color: #dc2626;
+}
+
+/* Responsividade refinada */
+@media (max-width: 640px) {
+  .sidebar {
+    width: 240px !important;
+  }
+  .page-header h2 {
+    font-size: 1.25rem;
+  }
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  .empresa-switch {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .empresa-switch a {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Animações sutis */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kpi-card {
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+@layer base {
+  .dark body {
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+
+  .dark .sidebar {
+    background: #0f172a;
+    border-right-color: rgba(255,255,255,0.05);
+  }
+
+  .dark .kpi-card,
+  .dark .card {
+    background: #1e293b;
+    border-color: rgba(255,255,255,0.05);
+  }
+
+  .dark .page-header h2 {
+    -webkit-text-fill-color: #e2e8f0;
+  }
+}
