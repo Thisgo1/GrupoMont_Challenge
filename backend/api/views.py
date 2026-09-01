@@ -651,6 +651,114 @@ class EvolucaoReceitaView(APIView):
             "labels": [e["mes"] for e in resultado],
         })
 
+# ================================================================
+# METAS E PROJEÇÃO — ritmo de meta, gap e necessidade diária
+# ================================================================
+class MetasProjecaoView(APIView):
+    def get(self, request):
+        mes = request.query_params.get("mes") or mes_mais_recente(MontseguroLead.objects.all())
+        if mes is None:
+            return Response({"detail": "Sem dados carregados."}, status=404)
+
+        inicio_mes, fim_mes = limites_do_mes(mes)
+
+        # Dias úteis (simplificado para 22 dias úteis por mês)
+        dias_uteis_mes = 22
+        # Dia atual (usamos a data de hoje para simular o progresso do mês)
+        dia_atual = datetime.now().day
+        dia_corrido = min(dia_atual, dias_uteis_mes)
+        dias_restantes = max(dias_uteis_mes - dia_corrido, 1)
+
+        empresas_config = [
+            {"nome": "Montseguro", "choice": Empresa.MONTSEGURO, "comissao": COMISSAO_MONTSEGURO},
+            {"nome": "Prop5", "choice": Empresa.PROP5},
+            {"nome": "TechBrabo", "choice": Empresa.TECHBRABO},
+        ]
+
+        resultado = []
+
+        for emp in empresas_config:
+            nome = emp["nome"]
+            empresa_choice = emp["choice"]
+
+            # ---- 1. Receita realizada (mesmo cálculo do CEOOverview) ----
+            if nome == "Montseguro":
+                ativos = MontseguroClienteAtivo.objects.filter(
+                    data_ativacao__lte=fim_mes
+                ).exclude(cancelado=True, data_cancelamento__lte=fim_mes)
+                premio_total = ativos.aggregate(total=Sum("premio_mensal"))["total"] or Decimal("0")
+                receita = round(premio_total * emp["comissao"], 2)
+
+            elif nome == "Prop5":
+                fechamentos = Prop5Oportunidade.objects.filter(
+                    estagio="Fechado",
+                    data_fechamento__gte=inicio_mes,
+                    data_fechamento__lte=fim_mes
+                )
+                receita = fechamentos.aggregate(total=Sum("comissao"))["total"] or Decimal("0")
+
+            else:  # TechBrabo
+                mrr = _mrr_ate(fim_mes)
+                receita_pontual = TechbraboOportunidade.objects.filter(
+                    estagio="Contrato assinado",
+                    tipo_receita="Pontual",
+                    data_contrato__gte=inicio_mes,
+                    data_contrato__lte=fim_mes
+                ).aggregate(total=Sum("valor_contrato"))["total"] or Decimal("0")
+                receita = mrr + receita_pontual
+
+            # ---- 2. Meta do mês ----
+            meta_obj = MetaEmpresa.objects.filter(empresa=empresa_choice, mes=mes).first()
+            meta = meta_obj.meta_receita if meta_obj else Decimal("0")
+
+            # ---- 3. Meta esperada até hoje (proporcional aos dias úteis) ----
+            meta_esperada = meta * Decimal(str(dia_corrido / dias_uteis_mes))
+
+            # ---- 4. Gap de ritmo (realizado - meta esperada) ----
+            gap_ritmo = receita - meta_esperada
+
+            # ---- 5. Necessidade diária (quanto precisa ser produzido por dia para bater a meta) ----
+            restante_para_meta = max(meta - receita, Decimal("0"))
+            necessidade_diaria = restante_para_meta / Decimal(str(dias_restantes))
+
+            # ---- 6. Atingimento da meta (realizado / meta total) ----
+            atingimento = round(float(receita) / float(meta) * 100, 1) if meta else None
+
+            # ---- 7. Quantidade de negócios (para contexto) ----
+            if nome == "Montseguro":
+                qtd_negocios = MontseguroFunil.objects.filter(
+                    data_contratacao__gte=inicio_mes,
+                    data_contratacao__lte=fim_mes
+                ).count()
+            elif nome == "Prop5":
+                qtd_negocios = fechamentos.count()
+            else:
+                qtd_negocios = TechbraboOportunidade.objects.filter(
+                    estagio="Contrato assinado",
+                    data_contrato__gte=inicio_mes,
+                    data_contrato__lte=fim_mes
+                ).count()
+
+            resultado.append({
+                "empresa": nome,
+                "receita": receita,
+                "meta": meta,
+                "atingimento_pct": atingimento,
+                "meta_esperada_ate_hoje": round(meta_esperada, 2),
+                "gap_ritmo": round(gap_ritmo, 2),
+                "necessidade_diaria": round(necessidade_diaria, 2),
+                "dias_uteis_restantes": dias_restantes,
+                "qtd_negocios": qtd_negocios,
+                "dia_corrido": dia_corrido,
+            })
+
+        return Response({
+            "mes": mes,
+            "dias_uteis_mes": dias_uteis_mes,
+            "dia_corrido": dia_corrido,
+            "empresas": resultado,
+        })
+
 
 class CEOOverviewAPIView(APIView):
     def get(self, request):
