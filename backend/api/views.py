@@ -233,7 +233,7 @@ def _mes_anterior(mes_str):
     return f"{ano}-{mes - 1:02d}"
 
 # ---------------------------------------------------------------
-# TECHBRABO 
+# TECHBRABO
 # ---------------------------------------------------------------
 class TechbraboKpisView(APIView):
     def get(self, request):
@@ -331,7 +331,95 @@ class TechbraboKpisView(APIView):
             "atingimento_meta_pct": atingimento_meta,
         })
 
+# ---------------------------------------------------------------
+# Endpoints de listagem "crua" — usados pelos gráficos de funil e
+# marketing no front. Aceitam filtro opcional ?mes=YYYY-MM.
+# ---------------------------------------------------------------
+class MontseguroFunilListView(generics.ListAPIView):
+    serializer_class = MontseguroFunilSerializer
 
+    def get_queryset(self):
+        qs = MontseguroFunil.objects.select_related("lead").all()
+        mes = self.request.query_params.get("mes")
+        vendedor = self.request.query_params.get("vendedor")
+        canal = self.request.query_params.get("canal")
+
+        if mes:
+            qs = qs.filter(lead__mes_referencia=mes)
+        if vendedor:
+            qs = qs.filter(vendedor=vendedor)
+        if canal:
+            qs = qs.filter(lead__canal=canal)
+        return qs
+
+
+class MontseguroClienteAtivoListView(generics.ListAPIView):
+    queryset = MontseguroClienteAtivo.objects.all()
+    serializer_class = MontseguroClienteAtivoSerializer
+
+
+class Prop5OportunidadeListView(generics.ListAPIView):
+    serializer_class = Prop5OportunidadeSerializer
+
+    def get_queryset(self):
+        qs = Prop5Oportunidade.objects.select_related("lead").all()
+        mes = self.request.query_params.get("mes")
+        vendedor = self.request.query_params.get("vendedor")
+        canal = self.request.query_params.get("canal")
+
+        if mes:
+            qs = qs.filter(lead__mes_referencia=mes)
+        if vendedor:
+            qs = qs.filter(vendedor=vendedor)
+        if canal:
+            qs = qs.filter(lead__canal=canal)
+        return qs
+
+
+
+class TechbraboOportunidadeListView(generics.ListAPIView):
+    serializer_class = TechbraboOportunidadeSerializer
+
+    def get_queryset(self):
+        qs = TechbraboOportunidade.objects.select_related("lead").all()
+        mes = self.request.query_params.get("mes")
+        vendedor = self.request.query_params.get("vendedor")
+        canal = self.request.query_params.get("canal")
+
+        if mes:
+            qs = qs.filter(lead__mes_referencia=mes)
+        if vendedor:
+            qs = qs.filter(vendedor=vendedor)
+        if canal:
+            qs = qs.filter(lead__canal=canal)
+        return qs
+
+
+class TechbraboProjetoListView(generics.ListAPIView):
+    queryset = TechbraboProjeto.objects.all()
+    serializer_class = TechbraboProjetoSerializer
+
+
+class MarketingListView(generics.ListAPIView):
+    serializer_class = MarketingSerializer
+
+    def get_queryset(self):
+        qs = Marketing.objects.all()
+        empresa = self.request.query_params.get("empresa")
+        if empresa:
+            qs = qs.filter(empresa=empresa)
+        return qs
+
+
+class MetaEmpresaListView(generics.ListAPIView):
+    serializer_class = MetaEmpresaSerializer
+
+    def get_queryset(self):
+        qs = MetaEmpresa.objects.all()
+        empresa = self.request.query_params.get("empresa")
+        if empresa:
+            qs = qs.filter(empresa=empresa)
+        return qs
 class CEOOverviewAPIView(APIView):
     def get(self, request):
         ano = request.query_params.get('ano', datetime.now().year)
@@ -370,34 +458,4 @@ class CEOOverviewAPIView(APIView):
                 'gap': forecast - meta_valor,
             })
         return Response(resultado)
-
-class EmpresaViewSet(viewsets.ModelViewSet):
-    queryset = Empresa.objects.all()
-    serializer_class = EmpresaSerializer
-
-class VendedorViewSet(viewsets.ModelViewSet):
-    queryset = Vendedor.objects.all()
-    serializer_class = VendedorSerializer
-
-class CanalViewSet(viewsets.ModelViewSet):
-    queryset = Canal.objects.all()
-    serializer_class = CanalSerializer
-
-class CampanhaViewSet(viewsets.ModelViewSet):
-    queryset = Campanha.objects.all()
-    serializer_class = CampanhaSerializer
-
-class OportunidadeViewSet(viewsets.ModelViewSet):
-    queryset = Oportunidade.objects.all()
-    serializer_class = OportunidadeSerializer
-    filterset_fields = ['empresa', 'status', 'canal', 'vendedor', 'estagio']
-    search_fields = ['empresa__nome']
-
-class MetaViewSet(viewsets.ModelViewSet):
-    queryset = Meta.objects.all()
-    serializer_class = MetaSerializer
-
-class MarketingInvestimentoViewSet(viewsets.ModelViewSet):
-    queryset = MarketingInvestimento.objects.all()
-    serializer_class = MarketingInvestimentoSerializer
 
