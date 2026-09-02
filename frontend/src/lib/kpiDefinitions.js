@@ -1,65 +1,12 @@
 // src/lib/kpiDefinitions.js
+
 export const kpiDefinitions = {
-  // ===== Montseguro =====
-  receita_comissao: {
-    label: "Receita de Comissão",
-    description: "Receita efetiva gerada pela Montseguro no mês, calculada sobre o prêmio dos clientes ativos.",
-    formula: "Σ prêmio_mensal × 15% (comissão média)"
-  },
-  taxa_implantacao: {
-    label: "Taxa de Implantação",
-    description: "Percentual de contratos que se tornaram clientes ativos. Se baixa, indica gargalo pós-venda.",
-    formula: "(implantados / contratados) × 100"
-  },
-  vidas_ativas: {
-    label: "Vidas Ativas",
-    description: "Total de beneficiários cobertos por planos de saúde ativos. Reflete o tamanho real da carteira.",
-    formula: "Σ vidas_ativas dos contratos não cancelados"
-  },
-  churn: {
-    label: "Taxa de Churn",
-    description: "Percentual de clientes que cancelaram no período. Churn alto anula o esforço de aquisição.",
-    formula: "(cancelamentos no mês / clientes ativos no início do mês) × 100"
-  },
-  cac: {
-    label: "CAC (Custo de Aquisição)",
-    description: "Custo médio para adquirir um novo cliente. Comparar com ticket médio e margem para avaliar payback.",
-    formula: "investimento em Marketing / novos clientes no período"
-  },
-
-  // ===== Prop5 =====
-  pipeline_ponderado: {
-    label: "Pipeline Ponderado",
-    description: "Valor estimado das oportunidades em aberto, ajustado pela probabilidade de fechamento. Mais realista que pipeline bruto.",
-    formula: "Σ (valor_estimado × probabilidade)"
-  },
-  ciclo_medio: {
-    label: "Ciclo Médio de Venda",
-    description: "Tempo médio entre a entrada do lead e o fechamento da oportunidade. Ciclo muito longo pode indicar objeções não tratadas.",
-    formula: "média (data_fechamento − data_criação do lead)"
-  },
-
-  // ===== TechBrabo =====
-  mrr: {
-    label: "MRR (Receita Recorrente Mensal)",
-    description: "Base de receita previsível da TechBrabo. MRR crescente indica negócio mais sustentável.",
-    formula: "Σ mrr de todos os contratos recorrentes ativos"
-  },
-  margem_media: {
-    label: "Margem Média",
-    description: "Margem de lucro média dos projetos concluídos. Margem caindo com receita subindo é alerta.",
-    formula: "Σ margem / Σ valor_contrato dos projetos concluídos"
-  },
-  projetos_prazo: {
-    label: "% Projetos no Prazo",
-    description: "Percentual de projetos entregues dentro do prazo. Conecta vendas com capacidade de entrega.",
-    formula: "(projetos concluídos sem atraso / total de concluídos) × 100"
-  },
-
-  // ===== Comuns / CEO Overview =====
+  // ============================================================
+  // 1. KPIs CONSOLIDADOS DO GRUPO (CEO Overview)
+  // ============================================================
   receita_total: {
     label: "Receita Total do Grupo",
-    description: "Soma da receita reconhecida das três empresas. É a base para avaliar o desempenho consolidado.",
+    description: "Resultado financeiro agregado do período, somando a receita reconhecida das três empresas.",
     formula: "Σ (receita Montseguro + comissão Prop5 + receita TechBrabo)"
   },
   meta_total: {
@@ -68,8 +15,8 @@ export const kpiDefinitions = {
     formula: "Σ meta_receita de Montseguro, Prop5 e TechBrabo"
   },
   atingimento_meta: {
-    label: "Atingimento da Meta",
-    description: "Percentual da meta já realizado no período. Valor abaixo de 100% indica necessidade de aceleração.",
+    label: "Atingimento de Meta",
+    description: "Percentual da meta já realizado. Valores abaixo de 100% indicam necessidade de aceleração.",
     formula: "(receita realizada / meta do período) × 100"
   },
   forecast: {
@@ -132,99 +79,157 @@ export const kpiDefinitions = {
     description: "Quantos dias úteis ainda restam no mês para correr atrás da meta.",
     formula: "dias úteis totais − dias corridos"
   },
-   receita_empresa: {
+
+  // ============================================================
+  // 2. MONTSEGURO
+  // ============================================================
+  receita_comissao: {
+    label: "Receita de Comissão",
+    description: "Resultado financeiro efetivo do mês, calculado sobre o prêmio dos contratos já implantados e ativos.",
+    formula: "Σ prêmio_mensal dos contratos implantados e ativos × % de comissão média"
+  },
+  taxa_implantacao: {
+    label: "Taxa de Implantação",
+    description: "Percentual de contratos que efetivamente se tornaram clientes ativos. Implantação baixa com contratação alta indica gargalo pós-venda.",
+    formula: "(implantados / contratados no período) × 100"
+  },
+  vidas_ativas: {
+    label: "Vidas Ativas",
+    description: "Total de beneficiários cobertos por planos de saúde ativos. Reflete o tamanho real da carteira.",
+    formula: "Σ vidas_ativas dos contratos não cancelados"
+  },
+  churn: {
+    label: "Taxa de Churn",
+    description: "Percentual de clientes que cancelaram no período. Churn alto anula o esforço comercial.",
+    formula: "(cancelamentos no mês / clientes ativos no início do mês) × 100"
+  },
+  cac: {
+    label: "CAC (Custo de Aquisição)",
+    description: "Custo médio para adquirir um novo cliente. Comparar com ticket médio e margem para avaliar payback.",
+    formula: "investimento em Marketing / novos clientes no período"
+  },
+  taxa_conversao_lead_contratacao: {
+    label: "Taxa de Conversão Lead → Contratação",
+    description: "Eficiência ponta a ponta do funil comercial. Separar por canal revela se o problema é qualidade de lead ou execução comercial.",
+    formula: "(contratações no período / leads no período) × 100"
+  },
+  ticket_medio_premio: {
+    label: "Ticket Médio (Prêmio Mensal)",
+    description: "Valor médio do prêmio mensal por contrato fechado. Cruzar com porte da empresa (MEI/pequena/média) explica variação.",
+    formula: "Σ prêmio_mensal implantado / nº contratos implantados"
+  },
+
+  // ============================================================
+  // 3. PROP5
+  // ============================================================
+  pipeline_ponderado: {
+    label: "Pipeline Ponderado",
+    description: "Valor estimado das oportunidades em aberto, ajustado pela probabilidade de fechamento. Mais realista que pipeline bruto.",
+    formula: "Σ (valor_estimado × probabilidade) das oportunidades em aberto"
+  },
+  ciclo_medio: {
+    label: "Ciclo Médio de Venda",
+    description: "Tempo médio entre a entrada do lead e o fechamento da oportunidade. Ciclo muito longo pode indicar objeções não tratadas.",
+    formula: "média (data_fechamento − data_criação do lead)"
+  },
+  ticket_medio_fechado: {
+    label: "Ticket Médio por Operação Fechada",
+    description: "Valor médio de cada operação estruturada. Cruzar com país de origem e canal para achar o perfil mais valioso.",
+    formula: "Σ valor_fechado / nº de fechamentos"
+  },
+  taxa_conversao_lead_fechamento: {
+    label: "Taxa de Conversão Lead → Fechamento",
+    description: "Eficiência do funil consultivo. Ciclo longo exige olhar por coorte de entrada, não só pelo mês do fechamento.",
+    formula: "(oportunidades fechadas / leads do período) × 100"
+  },
+
+  // ============================================================
+  // 4. TECHBRABO
+  // ============================================================
+  mrr: {
+    label: "MRR (Receita Recorrente Mensal)",
+    description: "Base de receita previsível da TechBrabo. MRR crescente indica negócio mais sustentável e menos dependente de projetos pontuais.",
+    formula: "Σ mrr de todos os contratos recorrentes ativos"
+  },
+  margem_media: {
+    label: "Margem Média dos Projetos",
+    description: "Margem de lucro média dos projetos concluídos. Receita subindo com margem caindo é um alerta silencioso.",
+    formula: "Σ margem / Σ valor_contrato dos projetos concluídos"
+  },
+  projetos_prazo: {
+    label: "% de Projetos no Prazo",
+    description: "Percentual de projetos entregues dentro do prazo. Conecta vendas com capacidade de entrega.",
+    formula: "(projetos concluídos sem atraso / total de concluídos) × 100"
+  },
+  expansao_clientes: {
+    label: "Expansão vs. Novo Cliente",
+    description: "Percentual da receita que vem de clientes existentes (upsell/cross-sell). Um mix saudável reduz dependência de aquisição constante.",
+    formula: "Σ valor_contrato com cliente_existente / receita total do período"
+  },
+  receita_pontual: {
+    label: "Receita Pontual do Período",
+    description: "Receita de projetos únicos (não recorrentes). Complementa o MRR sem misturar naturezas de receita diferentes.",
+    formula: "Σ valor_contrato de contratos com tipo_receita = 'Pontual' fechados no período"
+  },
+  ticket_medio_contrato: {
+    label: "Ticket Médio por Contrato",
+    description: "Valor médio negociado por contrato. Separar por tipo_solucao mostra onde está o maior valor agregado.",
+    formula: "Σ valor_contrato / nº de contratos assinados"
+  },
+  pipeline_forecast: {
+    label: "Pipeline / Forecast Comercial",
+    description: "Projeção de novos contratos com base nas propostas enviadas, ponderada por taxa histórica de fechamento.",
+    formula: "Σ valor_proposta das propostas enviadas × taxa histórica"
+  },
+
+  // ============================================================
+  // 5. MÉTRICAS DE MARKETING (usadas na página Marketing)
+  // ============================================================
+  investimento_total: {
+    label: "Investimento Total",
+    description: "Soma de todo o investimento em Marketing no período, independente do canal.",
+    formula: "Σ investimento de todos os canais"
+  },
+  leads_gerados: {
+    label: "Leads Gerados",
+    description: "Total de leads gerados por todos os canais no período.",
+    formula: "Σ leads_gerados de todos os canais"
+  },
+  receita_estimada: {
+    label: "Receita Estimada",
+    description: "Receita atribuída aos leads gerados pelo Marketing, considerando o estágio de conversão de cada um.",
+    formula: "Σ receita dos leads que avançaram no funil"
+  },
+  roi_geral: {
+    label: "ROI Geral",
+    description: "Retorno sobre o investimento total em Marketing. ROI positivo indica que o investimento está gerando resultado.",
+    formula: "((Receita Estimada − Investimento) / Investimento) × 100"
+  },
+  cpl: {
+    label: "CPL (Custo por Lead)",
+    description: "Custo médio para gerar um lead. Ajuda a comparar a eficiência entre canais.",
+    formula: "investimento do canal / leads gerados pelo canal"
+  },
+
+  // ============================================================
+  // 6. GENÉRICOS / POR EMPRESA (usados em detalhes)
+  // ============================================================
+  receita_empresa: {
     label: "Receita da Empresa",
     description: "Receita reconhecida pela empresa no período, conforme seu modelo de negócio (comissão, MRR, etc.).",
-    formula: "Varia conforme a empresa"
+    formula: "Varia conforme a empresa – veja KPIs específicos."
   },
   meta_empresa: {
     label: "Meta da Empresa",
     description: "Meta de receita estabelecida para a empresa no período.",
-    formula: "Definida no planejamento"
-  },
-  investimento_total: {
-    label: "Investimento Total",
-    description: "Soma de todo o investimento em marketing no período, em todos os canais.",
-    formula: "Σ investimento por canal"
-  },
-  leads_gerados: {
-    label: "Leads Gerados",
-    description: "Total de leads gerados pelos esforços de marketing no período.",
-    formula: "Σ leads por canal"
-  },
-  receita_estimada: {
-    label: "Receita Estimada",
-    description: "Receita gerada a partir dos leads adquiridos pelo marketing (atribuição por canal).",
-    formula: "Σ receita atribuída a cada canal"
-  },
-  roi_geral: {
-    label: "ROI Geral do Marketing",
-    description: "Retorno sobre o investimento total em marketing. ROI positivo indica que o marketing está gerando mais receita do que custa.",
-    formula: "(Receita - Investimento) / Investimento"
-  },
-  cpl: {
-    label: "CPL (Custo por Lead)",
-    description: "Custo médio para gerar cada lead. Útil para comparar eficiência entre canais.",
-    formula: "Investimento / Leads"
-  },
-  roi_canal: {
-    label: "ROI por Canal",
-    description: "Retorno sobre o investimento em um canal específico. Ajuda a identificar quais canais são mais eficientes.",
-    formula: "(Receita do canal - Investimento do canal) / Investimento do canal"
-  },
-  crescimento_mom: {
-    label: "Crescimento Mês a Mês",
-    description: "Variação percentual do MRR em relação ao mês anterior.",
-    formula: "((MRR atual − MRR anterior) / MRR anterior) × 100"
-  },
-  churn: {
-    label: "Taxa de Churn",
-    description: "Percentual de clientes que cancelaram no período.",
-    formula: "(cancelamentos no mês / clientes ativos no início do mês) × 100"
-  },
-  negocios_mes: {
-    label: "Negócios no mês",
-    description: "Quantidade total de negócios (contratos/vendas) fechados no mês.",
-    formula: "Σ contratos/vendas com data de fechamento no período"
-  },
-
+    formula: "Definida no planejamento estratégico."
+  }
 };
 
-const empresas = ['montseguro', 'prop5', 'techbrabo'];
-
-empresas.forEach((emp) => {
-  kpiDefinitions[`${emp}_total_leads`] = {
-    label: 'Total de Leads',
-    description: `Total de leads gerados para a ${emp === 'montseguro' ? 'Montseguro' : emp === 'prop5' ? 'Prop5' : 'TechBrabo'} no período.`,
-    formula: 'Σ leads criados no período'
-  };
-  kpiDefinitions[`${emp}_negocios_fechados`] = {
-    label: 'Negócios Fechados',
-    description: `Total de negócios (contratos/vendas) fechados pela ${emp === 'montseguro' ? 'Montseguro' : emp === 'prop5' ? 'Prop5' : 'TechBrabo'} no período.`,
-    formula: 'Varia conforme o funil de cada empresa'
-  };
-  kpiDefinitions[`${emp}_taxa_conversao`] = {
-    label: 'Taxa de Conversão',
-    description: `Percentual de leads que se tornaram negócios fechados na ${emp === 'montseguro' ? 'Montseguro' : emp === 'prop5' ? 'Prop5' : 'TechBrabo'}.`,
-    formula: '(Negócios Fechados / Total de Leads) × 100'
-  };
-  kpiDefinitions[`${emp}_receita_empresa`] = {
-    label: 'Receita da Empresa',
-    description: `Receita reconhecida pela ${emp === 'montseguro' ? 'Montseguro' : emp === 'prop5' ? 'Prop5' : 'TechBrabo'} no período, conforme seu modelo de negócio.`,
-    formula: 'Varia conforme a empresa (comissão, MRR, etc.)'
-  };
-  kpiDefinitions[`${emp}_pipeline_ponderado`] = {
-    label: 'Pipeline Ponderado',
-    description: `Valor estimado das oportunidades em aberto na ${emp === 'montseguro' ? 'Montseguro' : emp === 'prop5' ? 'Prop5' : 'TechBrabo'}, ajustado pela probabilidade de fechamento.`,
-    formula: 'Σ (valor_estimado × probabilidade)'
-  };
-});
-
-
-
+// Helper para acessar definições com fallback
 export function getKpiDefinition(key) {
   return kpiDefinitions[key] || {
-    label: key,
+    label: key.replace(/_/g, " ").toUpperCase(),
     description: "Descrição não disponível para este indicador.",
     formula: "—"
   };
