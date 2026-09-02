@@ -210,7 +210,7 @@ npm install
 npm run dev
 ```
 
-📂 Estrutura de dados
+## 📂 Estrutura de dados
 Montseguro
 MontseguroLead: lead gerado (canal, porte da empresa, vidas estimadas)
 
@@ -235,7 +235,7 @@ Marketing: investimento e leads por canal/mês/empresa
 
 MetaEmpresa: metas de receita e quantidade por mês/empresa
 
-🎨 Extras que adicionei
+## 🎨 Extras que adicionei
 Dark mode — toggle na sidebar, com persistência via localStorage
 
 Tipografia refinada — Geist Variable, com hierarquia clara e tabular-nums pra números
@@ -250,7 +250,7 @@ Logos das empresas — iniciais estilizadas (ou imagens, se disponíveis)
 
 Responsividade — sidebar colapsável em mobile e grids adaptáveis
 
-🚧 Limitações conhecidas
+## 🚧 Limitações conhecidas
 Churn da Prop5 e TechBrabo: não calculado por falta de dados de cancelamento/renovação.
 
 Margem da TechBrabo: estimada com base em custo_hora fixo, sem apontamento real de horas.
@@ -261,7 +261,7 @@ Persistência de filtros: o seletor de mês não é mantido entre telas.
 
 Desempenho: para volumes muito grandes (milhares de leads), seria necessário cache ou otimização de queries.
 
-📈 Evoluções futuras (se tivesse mais tempo)
+## 📈 Evoluções futuras (se tivesse mais tempo)
 Inclusão de autenticação e perfis de usuário (CEO, Comercial, Marketing).
 
 Alertas em tempo real via WebSocket.
@@ -274,14 +274,14 @@ Testes automatizados (unitários e de integração).
 
 Deploy automatizado com GitHub Actions.
 
-🧪 Tecnologias utilizadas
+## 🧪 Tecnologias utilizadas
 Backend: Python 3.12, Django 6.1, Django REST Framework, SQLite3
 
 Frontend: React 19, Vite 8, shadcn/ui, Tailwind CSS 4, Recharts
 
 Ferramentas: Git, npm, pip, venv
 
-📄 Licença
+## 📄 Licença
 Este projeto foi desenvolvido como parte de um desafio técnico para o Grupo Mont. Todos os direitos reservados.
 
 Desenvolvido por — Thiago Silva Ribeiro
