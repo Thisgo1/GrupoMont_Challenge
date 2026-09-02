@@ -124,6 +124,8 @@ Identifiquei campos que seriam necessários para uma análise mais precisa, mas 
 Documentei essas limitações e, para demonstrar como seria com dados completos, criei um script de enriquecimento que gera uma versão estendida do JSON com campos extras.
 
 ---
+## Acesse o projeto em
+https://montdashboard.vercel.app
 
 ## 🛠️ Como rodar o projeto localmente
 
