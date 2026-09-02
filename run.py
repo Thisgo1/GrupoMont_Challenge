@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script de automação para executar o projeto GrupoMont Challenge.
-Cria venv, instala dependências, migra banco, carrega dados mock e inicia servidor.
+Cria venv, instala dependências, cria migrações, migra banco, carrega dados mock e inicia servidor.
 """
 
 import os
@@ -71,9 +71,11 @@ def install_frontend_dependencies():
     run_command("npm install", cwd=FRONTEND_DIR)
 
 def run_migrations():
-    print_info("Executando migrações do Django...")
+    print_info("Criando migrações (se houver novas)...")
     python = get_venv_python()
     manage = os.path.join(BACKEND_DIR, 'manage.py')
+    run_command(f'"{python}" "{manage}" makemigrations', cwd=BACKEND_DIR)
+    print_info("Executando migrações...")
     run_command(f'"{python}" "{manage}" migrate', cwd=BACKEND_DIR)
 
 def load_mock_data():
