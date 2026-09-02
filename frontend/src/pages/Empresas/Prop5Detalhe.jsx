@@ -54,9 +54,9 @@ export default function Prop5Detalhe({ mes }) {
       <div className="section">
         <h3>Volume transacionado x receita real</h3>
         <p>
-          {volumeFechado.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+          {volumeFechado.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 })}
           {" "}estruturados no total ·{" "}
-          {comissaoTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })}
+          {comissaoTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 })}
           {" "}de comissão efetiva
           ({volumeFechado ? ((comissaoTotal / volumeFechado) * 100).toFixed(1) : 0}% do volume)
         </p>

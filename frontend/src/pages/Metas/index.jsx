@@ -46,8 +46,20 @@ export default function Metas() {
 
             {/* Cards de KPIs */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              <KpiCard label="Meta" value={emp.meta} format="currency" accent={accent} />
-              <KpiCard label="Realizado" value={emp.receita} format="currency" accent={accent} />
+              <KpiCard
+                label="Meta"
+                value={emp.meta}
+                format="currency"
+                accent={accent}
+                definition="meta_empresa"
+              />
+              <KpiCard
+                label="Realizado"
+                value={emp.receita}
+                format="currency"
+                accent={accent}
+                definition="receita_empresa"
+              />
               <KpiCard
                 label="Atingimento"
                 value={emp.atingimento_pct}
@@ -60,12 +72,41 @@ export default function Metas() {
                     : "vermelho"
                 }
                 accent={accent}
+                definition="atingimento_meta"
               />
-              <KpiCard label="Meta esperada hoje" value={emp.meta_esperada_ate_hoje} format="currency" accent={accent} />
-              <KpiCard label="Gap de ritmo" value={emp.gap_ritmo} format="currency" accent={accent} />
-              <KpiCard label="Necessidade diária" value={emp.necessidade_diaria} format="currency" accent={accent} />
-              <KpiCard label="Dias úteis restantes" value={emp.dias_uteis_restantes} accent={accent} />
-              <KpiCard label="Negócios no mês" value={emp.qtd_negocios} accent={accent} />
+              <KpiCard
+                label="Meta esperada hoje"
+                value={emp.meta_esperada_ate_hoje}
+                format="currency"
+                accent={accent}
+                definition="meta_esperada"
+              />
+              <KpiCard
+                label="Gap de ritmo"
+                value={emp.gap_ritmo}
+                format="currency"
+                accent={accent}
+                definition="gap_ritmo"
+              />
+              <KpiCard
+                label="Necessidade diária"
+                value={emp.necessidade_diaria}
+                format="currency"
+                accent={accent}
+                definition="necessidade_diaria"
+              />
+              <KpiCard
+                label="Dias úteis restantes"
+                value={emp.dias_uteis_restantes}
+                accent={accent}
+                definition="dias_uteis"
+              />
+              <KpiCard
+                label="Negócios no mês"
+                value={emp.qtd_negocios}
+                accent={accent}
+                definition="negocios_mes"
+              />
             </div>
 
             {/* Barra de progresso da meta */}

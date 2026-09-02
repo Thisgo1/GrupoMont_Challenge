@@ -100,11 +100,13 @@ export default function Comercial() {
             label="Total de Leads"
             value={resumo.totalLeads}
             accent={accent}
+            definition={`${empresa}_total_leads`}
           />
           <KpiCard
             label="Negócios Fechados"
             value={resumo.totalNegocios}
             accent={accent}
+            definition={`${empresa}_negocios_fechados`}
           />
           <KpiCard
             label="Taxa de Conversão"
@@ -118,12 +120,14 @@ export default function Comercial() {
                 : "vermelho"
             }
             accent={accent}
+            definition={`${empresa}_taxa_conversao`}
           />
           <KpiCard
             label="Receita Total"
             value={resumo.receitaTotal}
             format="currency"
             accent={accent}
+            definition={`${empresa}_receita_empresa`}
           />
           {pipelinePonderado !== undefined && (
             <KpiCard
@@ -131,6 +135,7 @@ export default function Comercial() {
               value={pipelinePonderado}
               format="currency"
               accent={accent}
+              definition={`${empresa}_pipeline_ponderado`}
             />
           )}
         </div>
@@ -139,7 +144,7 @@ export default function Comercial() {
       {/* Gráfico de distribuição por canal */}
       {stages ? (
         <>
-        <h3>Leads por Canal</h3>
+          <h3>Leads por Canal</h3>
           <div className="section">
             <BarList items={stages} accent={accent} numbered />
           </div>

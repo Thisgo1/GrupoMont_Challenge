@@ -67,6 +67,7 @@ export default function Empresas() {
 
       {kpis && (
         <div className="kpi-grid" style={{ marginBottom: "1.5rem" }}>
+          {/* ===== MONTSEGURO ===== */}
           {empresa === "montseguro" && (
             <>
               <KpiCard
@@ -74,6 +75,7 @@ export default function Empresas() {
                 value={kpis.receita_comissao_mes}
                 format="currency"
                 accent={config.accent}
+                definition="receita_comissao"
               />
               <KpiCard
                 label="Atingimento de meta"
@@ -87,27 +89,32 @@ export default function Empresas() {
                     : "vermelho"
                 }
                 accent={config.accent}
+                definition="atingimento_meta"
               />
               <KpiCard
                 label="Vidas ativas"
                 value={kpis.vidas_ativas}
                 accent={config.accent}
+                definition="vidas_ativas"
               />
               <KpiCard
                 label="CAC"
                 value={kpis.cac}
                 format="currency"
                 accent={config.accent}
+                definition="cac"
               />
               <KpiCard
                 label="Churn"
                 value={kpis.taxa_churn_pct}
                 format="percent"
                 accent={config.accent}
+                definition="churn"
               />
             </>
           )}
 
+          {/* ===== PROP5 ===== */}
           {empresa === "prop5" && (
             <>
               <KpiCard
@@ -115,6 +122,7 @@ export default function Empresas() {
                 value={kpis.receita_comissao_mes}
                 format="currency"
                 accent={config.accent}
+                definition="receita_comissao"
               />
               <KpiCard
                 label="Atingimento de meta"
@@ -128,28 +136,33 @@ export default function Empresas() {
                     : "vermelho"
                 }
                 accent={config.accent}
+                definition="atingimento_meta"
               />
               <KpiCard
                 label="Pipeline ponderado"
                 value={kpis.pipeline_ponderado}
                 format="currency"
                 accent={config.accent}
+                definition="pipeline_ponderado"
               />
               <KpiCard
                 label="Ciclo médio"
                 value={kpis.ciclo_medio_dias}
                 format="dias"
                 accent={config.accent}
+                definition="ciclo_medio"
               />
               <KpiCard
                 label="CAC"
                 value={kpis.cac}
                 format="currency"
                 accent={config.accent}
+                definition="cac"
               />
             </>
           )}
 
+          {/* ===== TECHBRABO ===== */}
           {empresa === "techbrabo" && (
             <>
               <KpiCard
@@ -157,12 +170,14 @@ export default function Empresas() {
                 value={kpis.mrr_atual}
                 format="currency"
                 accent={config.accent}
+                definition="mrr"
               />
               <KpiCard
                 label="Crescimento MRR"
                 value={kpis.crescimento_mrr_mom_pct}
                 format="percent"
                 accent={config.accent}
+                definition="crescimento_mom"
               />
               <KpiCard
                 label="Atingimento de meta"
@@ -176,18 +191,21 @@ export default function Empresas() {
                     : "vermelho"
                 }
                 accent={config.accent}
+                definition="atingimento_meta"
               />
               <KpiCard
                 label="Margem média"
                 value={kpis.margem_media_pct}
                 format="percent"
                 accent={config.accent}
+                definition="margem_media"
               />
               <KpiCard
                 label="Projetos no prazo"
                 value={kpis.pct_projetos_no_prazo}
                 format="percent"
                 accent={config.accent}
+                definition="projetos_prazo"
               />
             </>
           )}

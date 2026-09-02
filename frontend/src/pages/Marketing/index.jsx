@@ -24,7 +24,7 @@ import EmpresaLogo from "../../components/EmpresaLogo";
 import KpiCard from "../../components/KpiCard";
 
 const formatBRL = (v) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 });
 
 
 function aggregateMontseguro(funilData) {
@@ -266,23 +266,27 @@ export default function Marketing() {
           value={totalInvestimento}
           format="currency"
           accent={accent}
+          definition="investimento_total"
         />
         <KpiCard
           label="Leads Gerados"
           value={totalLeads}
           accent={accent}
+          definition="leads_gerados"
         />
         <KpiCard
           label="Receita Estimada"
           value={totalReceita}
           format="currency"
           accent={accent}
+          definition="receita_estimada"
         />
         <KpiCard
           label="ROI Geral"
           value={roiGeral !== null ? (roiGeral * 100).toFixed(1) : null}
           format="percent"
           accent={accent}
+          definition="roi_geral"
           status={
             roiGeral !== null
               ? roiGeral > 0.5 ? "verde" : roiGeral > 0 ? "amarelo" : "vermelho"
@@ -302,7 +306,7 @@ export default function Marketing() {
                 <YAxis
                   yAxisId="left"
                   orientation="left"
-                  tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v) => `R$ ${(v / 1000).toFixed(2)}k`}
                 />
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip
@@ -310,6 +314,7 @@ export default function Marketing() {
                     if (name === "investimento" || name === "receita") {
                       return formatBRL(value);
                     }
+                    
                     return value;
                   }}
                   labelFormatter={(label) => `Mês: ${label}`}

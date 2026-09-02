@@ -17,7 +17,6 @@ import {
   CartesianGrid
 } from "recharts";
 
-
 function statusPorAtingimento(pct) {
   if (pct === null || pct === undefined) return undefined;
   if (pct >= 95) return "verde";
@@ -32,10 +31,10 @@ export default function CeoOverview() {
   const [evolucao, setEvolucao] = useState(null);
 
   useEffect(() => {
-  getEvolucaoReceita(6)
-    .then(setEvolucao)
-    .catch(() => {});
-}, []);
+    getEvolucaoReceita(6)
+      .then(setEvolucao)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     getCeoOverview()
@@ -83,20 +82,56 @@ export default function CeoOverview() {
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-4">
           Grupo Mont — Consolidado
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-          <KpiCard label="Receita Total" value={total.receita_total} format="currency" accent="#1e293b" />
-          <KpiCard label="Meta Total" value={total.meta_total} format="currency" accent="#1e293b" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard
+            label="Receita Total"
+            value={total.receita_total}
+            format="currency"
+            accent="#1e293b"
+            definition="receita_total"
+          />
+          <KpiCard
+            label="Meta Total"
+            value={total.meta_total}
+            format="currency"
+            accent="#1e293b"
+            definition="meta_total"
+          />
           <KpiCard
             label="Atingimento"
             value={total.atingimento_geral_pct}
             format="percent"
             status={statusPorAtingimento(total.atingimento_geral_pct)}
             accent="#1e293b"
+            definition="atingimento_meta"
           />
-          <KpiCard label="Forecast" value={total.forecast_total} format="currency" accent="#1e293b" />
-          <KpiCard label="Gap" value={total.gap_total} format="currency" accent="#1e293b" />
-          <KpiCard label="Ticket Médio" value={total.ticket_medio_consolidado} format="currency" accent="#1e293b" />
-          <KpiCard label="Leads Totais" value={total.leads_total} accent="#1e293b" />
+          <KpiCard
+            label="Forecast"
+            value={total.forecast_total}
+            format="currency"
+            accent="#1e293b"
+            definition="forecast"
+          />
+          <KpiCard
+            label="Gap"
+            value={total.gap_total}
+            format="currency"
+            accent="#1e293b"
+            definition="gap"
+          />
+          <KpiCard
+            label="Ticket Médio"
+            value={total.ticket_medio_consolidado}
+            format="currency"
+            accent="#1e293b"
+            definition="ticket_medio"
+          />
+          <KpiCard
+            label="Leads Totais"
+            value={total.leads_total}
+            accent="#1e293b"
+            definition="leads_total"
+          />
           <KpiCard
             label="Taxa de Conversão Geral"
             value={total.taxa_conversao_geral_pct}
@@ -109,6 +144,7 @@ export default function CeoOverview() {
                 : "vermelho"
             }
             accent="#1e293b"
+            definition="taxa_conversao"
           />
         </div>
       </div>
@@ -119,10 +155,10 @@ export default function CeoOverview() {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Evolução da Receita (últimos 6 meses)
           </h3>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={450}>
             <LineChart
               data={evolucao.meses}
-              margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+              margin={{ top: 20, right: 25, left: 10, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="mes" />
@@ -134,7 +170,7 @@ export default function CeoOverview() {
                   value.toLocaleString("pt-BR", {
                     style: "currency",
                     currency: "BRL",
-                    maximumFractionDigits: 0,
+                    maximumFractionDigits: 2,
                   })
                 }
                 labelFormatter={(label) => `Mês: ${label}`}
@@ -187,10 +223,33 @@ export default function CeoOverview() {
         <div className="bg-card rounded-lg border p-4">
           <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Ritmo de Meta</h4>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <KpiCard label="Meta esperada até hoje" value={total.meta_esperada_ate_hoje} format="currency" accent="#1e293b" />
-            <KpiCard label="Gap de ritmo" value={total.gap_ritmo_total} format="currency" accent="#1e293b" />
-            <KpiCard label="Necessidade diária" value={total.necessidade_diaria_total} format="currency" accent="#1e293b" />
-            <KpiCard label="Dias úteis restantes" value={total.dias_uteis_restantes} accent="#1e293b" />
+            <KpiCard
+              label="Meta esperada até hoje"
+              value={total.meta_esperada_ate_hoje}
+              format="currency"
+              accent="#1e293b"
+              definition="meta_esperada"
+            />
+            <KpiCard
+              label="Gap de ritmo"
+              value={total.gap_ritmo_total}
+              format="currency"
+              accent="#1e293b"
+              definition="gap_ritmo"
+            />
+            <KpiCard
+              label="Necessidade diária"
+              value={total.necessidade_diaria_total}
+              format="currency"
+              accent="#1e293b"
+              definition="necessidade_diaria"
+            />
+            <KpiCard
+              label="Dias úteis restantes"
+              value={total.dias_uteis_restantes}
+              accent="#1e293b"
+              definition="dias_uteis"
+            />
           </div>
         </div>
 
@@ -198,10 +257,34 @@ export default function CeoOverview() {
         <div className="bg-card rounded-lg border p-4">
           <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Marketing e Crescimento</h4>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <KpiCard label="Crescimento MoM" value={total.crescimento_mom_pct} format="percent" accent="#1e293b" />
-            <KpiCard label="Investimento Marketing" value={total.investimento_marketing_total} format="currency" accent="#1e293b" />
-            <KpiCard label="CAC Médio" value={total.cac_medio} format="currency" accent="#1e293b" />
-            <KpiCard label="ROI de Marketing" value={total.roi_marketing_geral_pct} format="percent" accent="#1e293b" />
+            <KpiCard
+              label="Crescimento MoM"
+              value={total.crescimento_mom_pct}
+              format="percent"
+              accent="#1e293b"
+              definition="crescimento_mom"
+            />
+            <KpiCard
+              label="Investimento Marketing"
+              value={total.investimento_marketing_total}
+              format="currency"
+              accent="#1e293b"
+              definition="investimento_marketing"
+            />
+            <KpiCard
+              label="CAC Médio"
+              value={total.cac_medio}
+              format="currency"
+              accent="#1e293b"
+              definition="cac"
+            />
+            <KpiCard
+              label="ROI de Marketing"
+              value={total.roi_marketing_geral_pct}
+              format="percent"
+              accent="#1e293b"
+              definition="roi_marketing"
+            />
           </div>
         </div>
       </div>
@@ -217,7 +300,7 @@ export default function CeoOverview() {
             <YAxis tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
             <Tooltip
               formatter={(value) =>
-                value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+                value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 })
               }
             />
             <Legend />
@@ -226,7 +309,6 @@ export default function CeoOverview() {
           </BarChart>
         </ResponsiveContainer>
       </div>
-
 
       {/* ===== DETALHES POR EMPRESA ===== */}
       {empresas.map((emp) => {
@@ -240,19 +322,50 @@ export default function CeoOverview() {
               <EmpresaLogo empresaKey={empresaKey} size="md" />
               <h3 className="text-lg font-semibold">{label}</h3>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-              <KpiCard label="Receita" value={emp.receita} format="currency" accent={accent} />
-              <KpiCard label="Meta" value={emp.meta} format="currency" accent={accent} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <KpiCard
+                label="Receita"
+                value={emp.receita}
+                format="currency"
+                accent={accent}
+                definition="receita_empresa"
+              />
+              <KpiCard
+                label="Meta"
+                value={emp.meta}
+                format="currency"
+                accent={accent}
+                definition="meta_empresa"
+              />
               <KpiCard
                 label="Atingimento"
                 value={emp.atingimento_pct}
                 format="percent"
                 status={statusPorAtingimento(emp.atingimento_pct)}
                 accent={accent}
+                definition="atingimento_meta"
               />
-              <KpiCard label="Forecast" value={emp.forecast} format="currency" accent={accent} />
-              <KpiCard label="Gap" value={emp.gap} format="currency" accent={accent} />
-              <KpiCard label="Ticket Médio" value={emp.ticket_medio} format="currency" accent={accent} />
+              <KpiCard
+                label="Forecast"
+                value={emp.forecast}
+                format="currency"
+                accent={accent}
+                definition="forecast"
+              />
+              <KpiCard
+                label="Gap"
+                value={emp.gap}
+                format="currency"
+                accent={accent}
+                definition="gap"
+              />
+              <KpiCard
+                label="Ticket Médio"
+                value={emp.ticket_medio}
+                format="currency"
+                accent={accent}
+                definition="ticket_medio"
+              />
             </div>
           </div>
         );

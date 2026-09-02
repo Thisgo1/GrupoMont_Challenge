@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const formatBRL = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const formatBRL = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 2 });
 
 export default function RankingTable({ linhas, labels, accent }) {
   if (!linhas.length) return <p className="text-muted-foreground">Sem resultados fechados nesse recorte ainda.</p>;
